@@ -1,7 +1,6 @@
 package JSONParse
 
 import (
-//	"fmt"
 )
 
 func allowPatterns(mem *JSONNode) (bool, map[string]*JSONNode) {

@@ -1,26 +1,29 @@
 package JSONParse
 
 import (
-//	"fmt"
-//	"regexp"
 )
 
 func validMember(name string, mem *JSONNode, schemaMem *JSONNode) bool {
+	if name != "anyOf" {
 	nodeState := mem.GetState()
 	if nodeState != VIRGIN {
 		return nodeState == VALID
+	}
 	}
 		
 	mem.SetState(VALIDATE_IN_PROGRESS)
 
 	valid := true
 
-	//fmt.Println("      validate individual member: ", name, " as ", mem.GetType(), " against ", schemaMem.GetType());
+	if name == "anyOf" {
+		schemaMem.dump()
+	}
+	Trace.Println("validate individual member: ", name, " as ", mem.GetType(), " against ", schemaMem.GetType());
 	if schemaMem.GetType() == "object" {
 		schemaMem.ResetIterate()
 		for {
 			key, item := schemaMem.GetNextMember()
-	//		fmt.Println("        validate ", name, " against schema mem ", key)
+			Trace.Println("  validate ", name, " against schema mem ", key)
 			if item == nil {
 				break;
 			}

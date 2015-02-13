@@ -1,7 +1,6 @@
 package JSONParse
 
 import (
-	"fmt"
 )
 
 // 5.5.2.  type
@@ -29,7 +28,7 @@ func validType(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	if value == schemaValue {
 		return true
 	} else {
-		fmt.Println("        invalid type: expecting - ", schemaValue, " - found - ", value, "instead")
+		OutputError(mem, "invalid type: expecting - " + schemaValue + " - found - " + value + "instead")
 		return false
 	}
 }

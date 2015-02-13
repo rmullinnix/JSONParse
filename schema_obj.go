@@ -1,19 +1,18 @@
 package JSONParse
 
 import (
-//	"fmt"
 )
 
 func (js *JSONSchema) validObject(doc *JSONNode, schema *JSONNode) bool {
 	var item	*JSONNode
 	var found	bool
 
-	//fmt.Println("    validate members")
+	Trace.Println(" Entering validObject")
 
 	if item, found = schema.Find("properties"); found {
 		item = item.GetValue().(*JSONNode)
 	} else {
-		panic("invalid schema")
+		Error.Panicln("invalid schema: no properties: definition")
 	}
 
 	validMember("root", doc, schema)

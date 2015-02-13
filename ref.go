@@ -1,7 +1,6 @@
 package JSONParse
 
 import (
-//	"fmt"
 	"strings"
 )
 
@@ -13,6 +12,8 @@ func (jp *JSONParser) resolveReferences() {
 	for key, _ := range jp.references {
 		jp.references[key] = jp.refObject(jp.jsonDoc, key)
 	}
+	Trace.Println("== REFERENCE TABLE ==")
+	Trace.Println(jp.references)
 }
 
 // find associated reference either in the current document or an
@@ -47,7 +48,7 @@ func (jp *JSONParser)refObject(doc *JSONNode, ref string) *JSONNode {
 		parts := strings.Split(ref, "#")
 
 		if eDoc, found = jp.extDocs[parts[0]]; !found {
-			extDoc := NewJSONParser(parts[0], 1)
+			extDoc := NewJSONParser(parts[0], 1, "default")
 
 			extDoc.Parse()
 
@@ -58,6 +59,7 @@ func (jp *JSONParser)refObject(doc *JSONNode, ref string) *JSONNode {
 		return jp.refObject(eDoc, "#" + parts[1])
 	}
 	jp.addError("Unable to resolve reference " + ref, JP_FATAL)
+	OutputError(doc, "Invalid json reference " + ref)
 
 	return nil
 }

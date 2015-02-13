@@ -1,7 +1,6 @@
 package JSONParse
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 )
@@ -100,7 +99,7 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 			break;
 		}
 
-		fmt.Println("      Match ", key)
+		Trace.Println("      Match ", key)
 		var schemaObj	*JSONNode
 		match := false
 		if item != nil {
@@ -128,7 +127,7 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		if match {
 			validMember(key, mem, schemaObj)
 		} else if addtlProps != nil {
-			fmt.Println("      member: ", key, " not found") 
+			Warning.Println("      member: ", key, " not found") 
 		}
 	}
 
@@ -151,7 +150,7 @@ func validMaxProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool 
 	propCount := value.GetMemberCount()
 	maxCount := schema.GetValue().(int)
 
-	fmt.Println("    max properties: ", maxCount, " mem count: ", propCount)
+	Trace.Println("    max properties: ", maxCount, " mem count: ", propCount)
 
 	return propCount <= maxCount
 }
@@ -176,7 +175,7 @@ func validMinProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool 
 	propCount := value.GetMemberCount()
 	minCount, _ := strconv.Atoi(schema.GetValue().(string))
 
-	fmt.Println("    min properties: ", minCount, " mem count: ", propCount)
+	Trace.Println("    min properties: ", minCount, " mem count: ", propCount)
 
 	return propCount >= minCount
 }

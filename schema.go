@@ -1,7 +1,6 @@
 package JSONParse
 
 import (
-	"fmt"
 )
 
 // primitive types - valid in value ("type": <value>)
@@ -39,7 +38,7 @@ var keywords		map[string]validator
 
 // Initializes a new json schema object used to parse the json schema and
 // use it validate a json document agains that schema
-func NewJSONSchema(source string) *JSONSchema {
+func NewJSONSchema(source string, level string) *JSONSchema {
 	js := new(JSONSchema)
 
 	keywords = make(map[string]validator)
@@ -60,7 +59,7 @@ func NewJSONSchema(source string) *JSONSchema {
 //	keywords["minimum"] = validMinimum
 //	keywords["exclusiveMinimum"] = validExclusiveMinimum
 //	keywords["pattern"] = validPattern
-//	keywords["anyOf"] = validAnyOf
+	keywords["anyOf"] = validAnyOf
 //	keywords["allOf"] = validAllOf
 //	keywords["oneOf"] = validOneOf
 //	keywords["multipleOf"] = validMultipleOf
@@ -71,7 +70,7 @@ func NewJSONSchema(source string) *JSONSchema {
 //	keywords["minProperties"] = validMinProperties
 //	keywords["additionalItems"] = validAdditionalItems
 
-	js.schema = NewJSONParser(source, 1)
+	js.schema = NewJSONParser(source, 1, level)
 
 	js.schema.Parse()
 
@@ -83,12 +82,12 @@ func NewJSONSchema(source string) *JSONSchema {
 func (js *JSONSchema) ValidateDocument(source string) (bool, []ParseError) {
 	var errors	[]ParseError
 
-	jp := NewJSONParser(source, 10)
+	jp := NewJSONParser(source, 10, "default")
 	jp.Parse()
 
 	js.doc = jp
 
-	fmt.Println("Validate Document: ", source)
+	Trace.Println("Validate Document: ", source)
 
 	result := js.validObject(jp.jsonDoc, js.schema.jsonDoc)
 	return result, errors

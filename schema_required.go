@@ -1,7 +1,6 @@
 package JSONParse
 
 import (
-	"fmt"
 )
 
 // 5.4.3.  required
@@ -42,8 +41,7 @@ func validRequired(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	}
 
 	if !match {
-		// need to implement error stack
-		fmt.Println("        missing required property ", missing)
+		OutputError(mem, "document missing required property " + missing)
 	}
 
 	return match

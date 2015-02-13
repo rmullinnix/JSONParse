@@ -25,6 +25,7 @@ func loadDoc(path string) ([]byte, error) {
 func loadFromHTTP(path string) ([]byte, error) {
 	resp, err := http.Get(path)
 	if err != nil {
+		Error.Fatalln(err.Error())
 		return nil, err
 	}
 
@@ -32,6 +33,7 @@ func loadFromHTTP(path string) ([]byte, error) {
 		defer resp.Body.Close()
 		return ioutil.ReadAll(resp.Body)
 	} else {
+		Error.Fatalln("Not able to access document: %q", path)
 		return nil, fmt.Errorf("Not able to access document: %q", path)
 	}
 }

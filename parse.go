@@ -1,7 +1,6 @@
 package JSONParse
 
 import (
-	"fmt"
 	"regexp"
 //	"strconv"
 	"strings"
@@ -85,7 +84,7 @@ var validNum		*regexp.Regexp
 var jsonTree		*JSONNode
 
 // Creates a new JSON Parser
-func NewJSONParser(source string, maxError int) *JSONParser {
+func NewJSONParser(source string, maxError int, level string) *JSONParser {
 	jp := new(JSONParser)
 	jp.source = source
 	jp.errorList = make([]ParseError, 0)
@@ -102,6 +101,10 @@ func NewJSONParser(source string, maxError int) *JSONParser {
 	jp.tokens = make([]int, 0)
 	jp.references = make(map[string]*JSONNode)
 	jp.extDocs = make(map[string]*JSONNode)
+
+	if level != "default" {
+		outputInit(level)
+	}
 
 	validNum = regexp.MustCompile(`-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?`)
 
@@ -132,7 +135,7 @@ func (jp *JSONParser) Parse() (bool, []ParseError) {
 
 	valid := jp.parseObject(jp.jsonDoc)
 	if !valid {
-		fmt.Println("invalid object")
+		Error.Println("invalid object")
 		return false, jp.errorList
 	}
 
@@ -151,58 +154,6 @@ func (jp *JSONParser) Parse() (bool, []ParseError) {
 // returns a pointer to the json document
 func (jp *JSONParser) GetDoc() *JSONNode {
 	return jp.jsonDoc
-}
-
-// formats the json with newlines and indentation
-func (jp *JSONParser) Pretty() string {
-	return jp.prettyTokens(jp.tokens)
-}
-
-func (jp *JSONParser) prettyTokens(tokens []int) string {
-	indent := 0
-	output := ""
-	for i := 0; i < len(tokens); i++ {
-		if tokens[i] == BEGIN_OBJECT {
-			output += "{\n"
-			indent++
-			output += strings.Repeat("\t", indent)
-		} else if tokens[i] == END_OBJECT {
-			indent--
-			output += "\n"
-			output += strings.Repeat("\t", indent)
-			output += `}`
-		} else if tokens[i] == BEGIN_ARRAY {
-			output += "[\n"
-			indent++
-			output += strings.Repeat("\t", indent)
-		} else if tokens[i] == END_ARRAY {
-			indent--
-			output += "\n"
-			output += strings.Repeat("\t", indent)
-			output += `]`
-		} else if tokens[i] == VALUE_SEPARATOR {
-			output += ",\n"
-			output += strings.Repeat("\t", indent)
-		} else if tokens[i] == J_FALSE {
-			output += `false`
-		} else if tokens[i] == J_TRUE {
-			output += `true`
-		} else if tokens[i] == J_NULL {
-			output += `null`
-		} else if tokens[i] == STRING {
-			i++
-			output += `"` + jp.variables[tokens[i]] + `"`
-		} else if tokens[i] == REF {
-			output += `"$ref"`
-		} else if tokens[i] == NUMBER {
-			i++
-			output += jp.variables[tokens[i]]
-		} else if tokens[i] == NAME_SEPARATOR {
-			output += `: `
-		}
-	}
-
-	return output
 }
 
 // converts the json stream into constants representing items

@@ -1,7 +1,7 @@
 package JSONParse
 
 import (
-	"fmt"
+	"strings"
 )
 
 // 5.5.1.  enum
@@ -22,6 +22,7 @@ func validEnum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 
 	match := false
 	arr := schema.GetValue().(*JSONNode)
+	valStr := "["
 	if arr.GetType() == "array"  {
 		arr.ResetIterate()
 		for {
@@ -34,11 +35,14 @@ func validEnum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 				match = true
 				break
 			}
+			valStr += val.(string) + ", "
 		}
 	}
 
 	if !match {
-		fmt.Println("        invalid enum ", value)
+		valStr = strings.TrimSuffix(valStr, ", ")
+		valStr += "]"
+		OutputError(mem, "invalid enum <" + value + "> specified in document. Must be one of " + valStr)
 	}
 
 	return match

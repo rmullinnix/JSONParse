@@ -1,7 +1,6 @@
 package JSONParse
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -23,7 +22,7 @@ func validMaxItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	// may have to do a find from the schema node for "items"
 	maxCount, _ := strconv.Atoi(schema.GetValue().(string))
 
-	fmt.Println("    max items: ", maxCount, " item count: ", itemCount)
+	Trace.Println("validMaxItems: max items: ", maxCount, " item count: ", itemCount)
 
 	return itemCount <= maxCount
 }
@@ -51,7 +50,7 @@ func validMinItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	// may have to do a find from the schema node for "items"
 	minCount, _ := strconv.Atoi(schema.GetValue().(string))
 
-	fmt.Println("    min items: ", minCount, " item count: ", itemCount)
+	Trace.Println("validMinItems: min items: ", minCount, " item count: ", itemCount)
 
 	return itemCount >= minCount
 }
@@ -103,7 +102,7 @@ func validUnique(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	}
 
 	if len(duplicate) > 0 {
-		fmt.Println("        contains duplicate item ", duplicate)
+		OutputError(mem, "Non unique items: document contains duplicate item " + duplicate)
 	}
 
 	return len(duplicate) == 0

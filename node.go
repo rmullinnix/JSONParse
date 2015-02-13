@@ -1,8 +1,6 @@
 package JSONParse
 
 import (
-	"fmt"
-//	"strings"
 )
 
 // NodeState is used to mark each node as not validated, in progress, valid or invald
@@ -290,7 +288,7 @@ func (jn *JSONNode) GetNextValue() interface{} {
 // will link to internal as well as external document sections
 func (jn *JSONNode) CollapseReference(parent *JSONNode) {
 	if jn.memNodeType != "reference" {
-		fmt.Println(" invalid ref node type", jn.memNodeType)
+		Error.Panicln(" invalid ref node type", jn.memNodeType)
 //		return
 	}
 
@@ -300,6 +298,10 @@ func (jn *JSONNode) CollapseReference(parent *JSONNode) {
 	// results in reference being removed for future traversals
 	refNode := jn.followReference(jn.root.doc.references)
 
+	if refNode == nil {
+		jn.dump()
+		panic("invalid reference")
+	}
 	delete(parent.namedKids, "$ref")
 
 	// calling GetNextMember() will chase references until valid object
@@ -320,6 +322,7 @@ func (jn *JSONNode) followReference(references map[string]*JSONNode) *JSONNode {
 	ptr := jn.GetValue().(*JSONNode)
 
 	if ptr.GetValue() == nil {
+		Trace.Println("reference ", ptr.name)
 		if ptrValue, found := references[ptr.name]; found {
 			ptr.SetValue(ptrValue)
 		} else {
@@ -332,18 +335,18 @@ func (jn *JSONNode) followReference(references map[string]*JSONNode) *JSONNode {
 
 // internal troubleshooting
 func (jn *JSONNode) dump() {
-	fmt.Println("NodeType: ", jn.nodeType)
-	fmt.Println(" memNodeType: ", jn.memNodeType)
-	fmt.Println(" name: ", jn.name)
-	fmt.Println(" Named kids")
+	Trace.Println("NodeType: ", jn.nodeType)
+	Trace.Println(" memNodeType: ", jn.memNodeType)
+	Trace.Println(" name: ", jn.name)
+	Trace.Println(" Named kids")
 
 	for key, item := range jn.namedKids {
-		fmt.Println("\t", key, ": ", item)
+		Trace.Println("\t", key, ": ", item)
 	}
 
-	fmt.Println(" Unnamed kids")
+	Trace.Println(" Unnamed kids")
 
 	for i := 0; i < len(jn.unnamedKids); i++  {
-		fmt.Println("\t", jn.unnamedKids[i])
+		Trace.Println("\t", jn.unnamedKids[i])
 	}
 }
