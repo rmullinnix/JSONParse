@@ -1,5 +1,0 @@
-package JSONParse
-
-import (
-//	"fmt"
-)

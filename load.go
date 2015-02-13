@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+// loads a document, schema or schema external reference
+// document can be loaded from file or over http
+// the prefix of the path determines whether to access file
+// system or internet.
+//
+// todo: support format of file://
 func loadDoc(path string) ([]byte, error) {
 	if strings.HasPrefix(path, "http") {
 		return loadFromHTTP(path)
@@ -15,6 +21,7 @@ func loadDoc(path string) ([]byte, error) {
 	}
 }
 
+// uses http.Get to retrieve the document over http protocol
 func loadFromHTTP(path string) ([]byte, error) {
 	resp, err := http.Get(path)
 	if err != nil {

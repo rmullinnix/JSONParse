@@ -5,12 +5,22 @@ import (
 	"strings"
 )
 
+// steps the reference map and stores the pointer to the json node
+// in the json tree.
+// when the schema is used for validation, the references are resolved
+// as they are encounter -- see node.go
 func (jp *JSONParser) resolveReferences() {
 	for key, _ := range jp.references {
 		jp.references[key] = jp.refObject(jp.jsonDoc, key)
 	}
 }
 
+// find associated reference either in the current document or an
+// external document.  If it is an external document, the document is
+// retrieved and parsed.  The external document is stored for future
+// reference during schema validation.
+//
+// if the reference cannot be resolved, it is flagged as an error
 func (jp *JSONParser)refObject(doc *JSONNode, ref string) *JSONNode {
 	// internal reference
 	if ref[0:1] == "#" {

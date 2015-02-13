@@ -7,6 +7,24 @@ import (
 	"strings"
 )
 
+// A JSON text is a sequence of tokens.  The set of tokens includes six
+//   structural characters, strings, numbers, and three literal names.
+//   A JSON text is a serialized object or array.
+//      JSON-text = object / array
+//   These are the six structural characters:
+//
+//      begin-array     = ws %x5B ws  ; [ left square bracket
+//      begin-object    = ws %x7B ws  ; { left curly bracket
+//      end-array       = ws %x5D ws  ; ] right square bracket
+//      end-object      = ws %x7D ws  ; } right curly bracket
+//      name-separator  = ws %x3A ws  ; : colon
+//      value-separator = ws %x2C ws  ; , comma
+//
+//  A JSON value MUST be an object, array, number, or string, or one of
+//   the following three literal names:
+//
+//      false null true
+
 const (
 	UNKNOWN		= 0
 	STRING          = 1
@@ -66,6 +84,7 @@ type JSONParser struct {
 var validNum		*regexp.Regexp
 var jsonTree		*JSONNode
 
+// Creates a new JSON Parser
 func NewJSONParser(source string, maxError int) *JSONParser {
 	jp := new(JSONParser)
 	jp.source = source
@@ -89,6 +108,9 @@ func NewJSONParser(source string, maxError int) *JSONParser {
 	return jp
 }
 
+// Parses the json by tokenizing the stream and parsing the object
+//  References addresses are stored in a map structure and
+//  are solved when traversing the json tree
 func (jp *JSONParser) Parse() (bool, []ParseError) {
 	// read from source
 	raw, ferr := loadDoc(jp.source)
@@ -126,10 +148,12 @@ func (jp *JSONParser) Parse() (bool, []ParseError) {
 	return true, jp.errorList
 }
 
+// returns a pointer to the json document
 func (jp *JSONParser) GetDoc() *JSONNode {
 	return jp.jsonDoc
 }
 
+// formats the json with newlines and indentation
 func (jp *JSONParser) Pretty() string {
 	return jp.prettyTokens(jp.tokens)
 }
@@ -181,6 +205,8 @@ func (jp *JSONParser) prettyTokens(tokens []int) string {
 	return output
 }
 
+// converts the json stream into constants representing items
+//   names are giving an index and stored in a reference map
 func (jp *JSONParser) tokenize() {
 	indxToken := 0
 	indxVar := 0
@@ -201,6 +227,12 @@ func (jp *JSONParser) tokenize() {
 	jp.curIndex = -1
 }
 
+// 2.3.  Arrays
+// 
+//    An array structure is represented as square brackets surrounding zero
+//    or more values (or elements).  Elements are separated by commas.
+// 
+//       array = begin-array [ value *( value-separator value ) ] end-array
 func (jp *JSONParser) parseArray(arr *JSONNode) bool {
 	if jp.curTokenType != BEGIN_ARRAY {
 		return false
@@ -230,6 +262,7 @@ func (jp *JSONParser) parseArray(arr *JSONNode) bool {
 	return true
 }
 
+//       member = string name-separator value
 func (jp *JSONParser) parseMember(mem *JSONNode) bool {
 	if !(jp.curTokenType == STRING || jp.curTokenType == REF) {
 		return false
@@ -283,6 +316,19 @@ func (jp *JSONParser) parseValue(val *JSONNode) bool {
 	return true
 }
 
+//   A JSON Reference is a JSON object, which contains a member named
+//   "$ref", which has a JSON string value.  Example:
+//
+//   { "$ref": "http://example.com/example.json#/foo/bar" }
+//
+//   If a JSON value does not have these characteristics, then it SHOULD
+//   NOT be interpreted as a JSON Reference.
+//
+//   The "$ref" string value contains a URI [RFC3986], which identifies
+//   the location of the JSON value being referenced.  It is an error
+//   condition if the string value does not conform to URI syntax rules.
+//   Any members other than "$ref" in a JSON Reference object SHALL be
+//   ignored.
 func (jp *JSONParser) parseRefPtr(ref *JSONNode) bool {
 	err := jp.expectToken(STRING | BEGIN_OBJECT)
 	if err != nil {
@@ -304,9 +350,18 @@ func (jp *JSONParser) parseRefPtr(ref *JSONNode) bool {
 
 	return true
 }
-		
-//  object = begin-object [ member *( value-separator member ) ]
-//      end-object
+
+// 2.2.  Objects
+// 
+//    An object structure is represented as a pair of curly brackets
+//    surrounding zero or more name/value pairs (or members).  A name is a
+//    string.  A single colon comes after each name, separating the name
+//    from the value.  A single comma separates a value from a following
+//    name.  The names within an object SHOULD be unique.
+// 
+//       object = begin-object [ member *( value-separator member ) ]
+//       end-object
+// 
 func (jp *JSONParser) parseObject(obj *JSONNode) bool {
 	if jp.curTokenType != BEGIN_OBJECT {
 		return false
@@ -349,6 +404,7 @@ func (jp *JSONParser) getToken() int {
 	return tokType
 }
 
+// expect one or more tokens as the next item in the json stream
 func (jp *JSONParser) expectToken(valTokens int) *ParseError {
 	token := jp.nextToken()
 
@@ -359,6 +415,7 @@ func (jp *JSONParser) expectToken(valTokens int) *ParseError {
 	return jp.addError("Unexpected token: Expecting " + tokenToString(valTokens) + " - Encountered " + tokenToString(token), JP_ERROR)
 }
 
+// retrieve the next token in the tokenized json stream
 func (jp *JSONParser) nextToken() int {
 	jp.curIndex++
 	jp.curTokenType = jp.tokens[jp.curIndex]
@@ -373,7 +430,7 @@ func (jp *JSONParser) nextToken() int {
 	return jp.curTokenType
 }
 
-// Retrieve the next word in the source json
+// Retrieve the next word in the source json source
 func (jp *JSONParser) getWord() int {
 	var letter	string
 
@@ -476,6 +533,8 @@ func (jp *JSONParser) getWord() int {
 	return 0
 }
 
+// keep track of the lines for the json tokens used to reproduce
+// json for error display
 func (jp *JSONParser) newLine(indent int) {
 	var newLine		lineItem
 
@@ -489,6 +548,7 @@ func (jp *JSONParser) newLine(indent int) {
 	jp.lines = append(jp.lines, newLine)
 }
 
+// add an error to the list of errors encountered during parsing
 func (jp *JSONParser) addError(errText string, level int) *ParseError {
 	var pError	ParseError
 
@@ -501,6 +561,7 @@ func (jp *JSONParser) addError(errText string, level int) *ParseError {
 	return &pError
 }
 
+// convert one or more tokens to a string representation separated by |
 func tokenToString(token int) string {
 	output := ""
 

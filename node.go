@@ -5,8 +5,14 @@ import (
 //	"strings"
 )
 
+// NodeState is used to mark each node as not validated, in progress, valid or invald
+// this is used to prevent validating the node more than once as json documents can
+// refer to the same section multiple times
+// It is also used to lock an object if multiple validators work need to work in concert
+// to validate the node (e.g., properties, patternProperties, additionalProperties
 type NodeState int
 
+// Valid states for NodeState
 const (
 	VIRGIN=iota
 	VALIDATE_IN_PROGRESS
@@ -15,6 +21,8 @@ const (
 	NODE_MUTEX
 )
 
+// Node for each item in the json tree
+// members are store in a map and array members are stored in an arry
 type JSONNode struct {
 	parent		*JSONNode
 	doc		*JSONParser
@@ -31,6 +39,8 @@ type JSONNode struct {
 	tokenIndex	int
 }
 
+// intializes a new json tree for a json document
+// a parsed json document is passed in as part of initialization
 func NewJSONTree(doc *JSONParser) *JSONNode {
 	jn := new(JSONNode)
 
@@ -46,6 +56,8 @@ func NewJSONTree(doc *JSONParser) *JSONNode {
 	return jn
 }
 
+// allocates a new node off of the current node
+// the input parameter is the token index generated from the parser
 func (jn *JSONNode) newNode(v_indx int) *JSONNode {
 	node := new(JSONNode)
 
@@ -60,6 +72,7 @@ func (jn *JSONNode) newNode(v_indx int) *JSONNode {
 	return node
 }
 
+// creates a new node of type "object"
 func (jn *JSONNode) NewObject(v_indx int) *JSONNode {
 	node := jn.newNode(v_indx)
 	node.nodeType = "object"
@@ -69,6 +82,7 @@ func (jn *JSONNode) NewObject(v_indx int) *JSONNode {
 	return node
 }
 
+// creates a new node of type "member"
 func (jn *JSONNode) NewMember(name string, v_indx int) *JSONNode {
 	node := jn.newNode(v_indx)
 	node.nodeType = "member"
@@ -82,6 +96,7 @@ func (jn *JSONNode) NewMember(name string, v_indx int) *JSONNode {
 	return node
 }
 
+// creates a new node of type "array"
 func (jn *JSONNode) NewArray(v_indx int) *JSONNode {
 	node := jn.newNode(v_indx)
 	node.nodeType = "array"
@@ -91,6 +106,7 @@ func (jn *JSONNode) NewArray(v_indx int) *JSONNode {
 	return node
 }
 
+// creates a new "value" node to be stored in an array
 func (jn *JSONNode) NewArrayValue(v_indx int) *JSONNode {
 	node := jn.newNode(v_indx)
 	node.nodeType = "value"
@@ -100,6 +116,7 @@ func (jn *JSONNode) NewArrayValue(v_indx int) *JSONNode {
 	return node
 }
 
+// creates a new node of type "reference" to support json reference
 func (jn *JSONNode) NewReference(name string, v_indx int) *JSONNode {
 	node := jn.newNode(v_indx)
 	node.nodeType = "reference"
@@ -110,34 +127,46 @@ func (jn *JSONNode) NewReference(name string, v_indx int) *JSONNode {
 	return node
 }
 
+// returns the parent node of the current node
+// if the current node is a referenced item, it refers back to the
+// parent where the referred object resides
 func (jn *JSONNode) GetParent() *JSONNode {
 	return jn.parent
 }
 
+// returns the root node of the json object
 func (jn *JSONNode) GetRoot() *JSONNode {
 	return jn.root
 }
 
+// sets the value of the node
 func (jn *JSONNode) SetValue(val interface{}) {
 	jn.value = val
 }
 
+// gets the value of the node, knowing the type (can use reflection)
+// allows the value to be cast as the appropriate value
 func (jn *JSONNode) GetValue() interface{} {
 	return jn.value
 }
 
+// sets the type of node
 func (jn *JSONNode) SetType(nodeType string) {
 	jn.nodeType = nodeType
 }
 
+// gets the type of node
 func (jn *JSONNode) GetType() string {
 	return jn.nodeType
 }
 
+// retrieve the number of members in the node
+// members are named values
 func (jn *JSONNode) GetMemberCount() int {
 	return len(jn.namedKids)
 }
 
+// set the value type of the members contained in the node
 func (jn *JSONNode) SetMemberType(nodeType string) {
 	if nodeType == "member" {
 		panic("invalid node member type")
@@ -145,18 +174,25 @@ func (jn *JSONNode) SetMemberType(nodeType string) {
 	jn.memNodeType = nodeType
 }
 
+// get the value type of the members contained in the node
 func (jn *JSONNode) GetMemberType() string {
 	return jn.memNodeType
 }
 
+// get the current state of the node - used during validation
 func (jn *JSONNode) GetState() NodeState {
 	return jn.state
 }
 
+// get the current state of the node - used during validation
 func (jn *JSONNode) SetState(state NodeState) {
 	jn.state = state
 }
 
+// find a named member in the current node
+// returns a pointer to the node if found, and nil if not found
+// If json references exist in the list of members, they are resolved
+// before searching. Once resolved, they become permanent links
 func (jn *JSONNode) Find(name string) (*JSONNode, bool) {
 	if len(jn.namedKids) == 1 {
 		if refNode, found := jn.namedKids["$ref"]; found {
@@ -171,6 +207,8 @@ func (jn *JSONNode) Find(name string) (*JSONNode, bool) {
 	}
 }
 
+// resets the node so the Member list or array can be iterated
+// from the beginning
 func (jn *JSONNode) ResetIterate() {
 	jn.curIndex = 0
 	jn.nameArray = make([]string, len(jn.namedKids))
@@ -181,6 +219,10 @@ func (jn *JSONNode) ResetIterate() {
 	jn.curIndex = 0
 }
 
+// retrieve the next named member
+// returns the member key (name) and the node
+// a valid of nil for the node indicates the end of the list
+// json references are resolved and become permanent members of the list
 func (jn *JSONNode) GetNextMember() (string, *JSONNode) {
 	if jn.curIndex >= len(jn.nameArray) {
 		return "", nil
@@ -219,6 +261,7 @@ func (jn *JSONNode) GetNextMember() (string, *JSONNode) {
 	return key, item
 }
 
+// retrieves the next array node from the list
 func (jn *JSONNode) GetNext() (*JSONNode) {
 	if jn.curIndex >= len(jn.unnamedKids) {
 		return nil
@@ -230,6 +273,7 @@ func (jn *JSONNode) GetNext() (*JSONNode) {
 	return item
 }
 
+// retrieves the next array value from the list
 func (jn *JSONNode) GetNextValue() interface{} {
 	if jn.curIndex >= len(jn.unnamedKids) {
 		return nil
@@ -241,6 +285,9 @@ func (jn *JSONNode) GetNextValue() interface{} {
 	return item.GetValue()
 }
 
+// removes the $ref tag from the list of members and
+// replaces with the members of the referred to json section
+// will link to internal as well as external document sections
 func (jn *JSONNode) CollapseReference(parent *JSONNode) {
 	if jn.memNodeType != "reference" {
 		fmt.Println(" invalid ref node type", jn.memNodeType)
@@ -251,7 +298,7 @@ func (jn *JSONNode) CollapseReference(parent *JSONNode) {
 	// refNode is an object that has members (namedKids) 
 	// move reference members to this node
 	// results in reference being removed for future traversals
-	refNode := jn.FollowReference(jn.root.doc.references)
+	refNode := jn.followReference(jn.root.doc.references)
 
 	delete(parent.namedKids, "$ref")
 
@@ -267,7 +314,9 @@ func (jn *JSONNode) CollapseReference(parent *JSONNode) {
 	parent.ResetIterate()
 }
 
-func (jn *JSONNode) FollowReference(references map[string]*JSONNode) *JSONNode {
+// returns the referred node of hte reference.  If the reference has not
+// been resolved yet, it access the references table to set the value
+func (jn *JSONNode) followReference(references map[string]*JSONNode) *JSONNode {
 	ptr := jn.GetValue().(*JSONNode)
 
 	if ptr.GetValue() == nil {
@@ -281,6 +330,7 @@ func (jn *JSONNode) FollowReference(references map[string]*JSONNode) *JSONNode {
 	return ptr.GetValue().(*JSONNode)
 }
 
+// internal troubleshooting
 func (jn *JSONNode) dump() {
 	fmt.Println("NodeType: ", jn.nodeType)
 	fmt.Println(" memNodeType: ", jn.memNodeType)

@@ -3,6 +3,7 @@ package JSONParse
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 )
 
 // covers properties, additonal properties and pattern properties
@@ -84,4 +85,26 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	}
 
 	return true
+}
+
+func validMaxProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+	value := mem.GetValue().(*JSONNode)
+
+	propCount := value.GetMemberCount()
+	maxCount := schema.GetValue().(int)
+
+	fmt.Println("    max properties: ", maxCount, " mem count: ", propCount)
+
+	return propCount > maxCount
+}
+
+func validMinProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+	value := mem.GetValue().(*JSONNode)
+
+	propCount := value.GetMemberCount()
+	minCount, _ := strconv.Atoi(schema.GetValue().(string))
+
+	fmt.Println("    min properties: ", minCount, " mem count: ", propCount)
+
+	return propCount < minCount
 }

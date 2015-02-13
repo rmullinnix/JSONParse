@@ -1,47 +1,9 @@
 package JSONParse
 
 import (
-	"fmt"
+//	"fmt"
 //	"regexp"
 )
-
-func (js *JSONSchema) validMembers(doc *JSONNode, schema *JSONNode) {
-	var item	*JSONNode
-	var found	bool
-
-	//fmt.Println("    validate members")
-
-	if item, found = schema.Find("properties"); found {
-		item = item.GetValue().(*JSONNode)
-	} else {
-		panic("invalid schema")
-	}
-
-	validMember("root", doc, schema)
-}
-
-func (js *JSONSchema) requiredMembers(mem *JSONNode, reqProps *JSONNode) {
-	if reqProps == nil {
-		return
-	}
-
-	reqArr := reqProps.GetValue().(*JSONNode)
-
-	reqArr.ResetIterate()
-	for {
-		reqItem := reqArr.GetNextValue()
-		if reqItem == nil {
-			break
-		}
-		reqValue := reqItem.(string)
-
-		if _, found := mem.Find(reqValue); !found {
-			fmt.Println("      required member missing: ", reqValue)
-		} else {
-			//fmt.Println("      required member found: ", reqValue)
-		}
-	}
-}
 
 func validMember(name string, mem *JSONNode, schemaMem *JSONNode) bool {
 	nodeState := mem.GetState()
