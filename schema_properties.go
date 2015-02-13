@@ -6,7 +6,57 @@ import (
 	"strconv"
 )
 
-// covers properties, additonal properties and pattern properties
+// 5.4.4.  additionalProperties, properties and patternProperties
+// 
+// 5.4.4.1.  Valid values
+// 
+// The value of "additionalProperties" MUST be a boolean or an object. 
+// If it is an object, it MUST also be a valid JSON Schema.
+// 
+// The value of "properties" MUST be an object. Each value of this object 
+// MUST be an object, and each object MUST be a valid JSON Schema.
+// 
+// The value of "patternProperties" MUST be an object. Each property name of 
+// this object SHOULD be a valid regular expression, according to the ECMA 262
+// regular expression dialect. Each property value of this object MUST be an 
+// object, and each object MUST be a valid JSON Schema.
+// 
+// 5.4.4.2.  Conditions for successful validation
+// 
+// Successful validation of an object instance against these three keywords 
+// depends on the value of "additionalProperties":
+// 
+// if its value is boolean true or a schema, validation succeeds;
+// if its value is boolean false, the algorithm to determine validation 
+//   success is described below.
+// 
+// 5.4.4.3.  Default values
+// 
+// If either "properties" or "patternProperties" are absent, they can be 
+// considered present with an empty object as a value.
+// 
+// If "additionalProperties" is absent, it may be considered present with 
+// an empty schema as a value.
+// 
+// 5.4.4.4.  If "additionalProperties" has boolean value false
+// 
+// In this case, validation of the instance depends on the property set of
+// "properties" and "patternProperties". In this section, the property names
+//  of "patternProperties" will be called regexes for convenience.
+// 
+// The first step is to collect the following sets:
+// 
+//  s - The property set of the instance to validate.
+//  p - The property set from "properties".
+//  pp - The property set from "patternProperties".
+// Having collected these three sets, the process is as follows:
+// 
+// remove from "s" all elements of "p", if any;
+// 
+// for each regex in "pp", remove all elements of "s" which this regex matches.
+// 
+// Validation of the instance succeeds if, after these two steps, set "s" is empty.
+// 
 func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	doc := mem
 	if mem.GetType() == "member"  {
@@ -70,11 +120,9 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 			}
 		}
 
-		if !match && (addtlProps != nil) {
-			if schemaMem, found := addtlProps.Find(key); found {
-				schemaObj = schemaMem.GetValue().(*JSONNode)
-				match = true
-			}
+		if !match && allowAddtl {
+			schemaObj = addtlProps
+			match = true
 		}
 
 		if match {
@@ -87,6 +135,16 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	return true
 }
 
+// 5.4.1.  maxProperties
+// 
+// 5.4.1.1.  Valid values
+// 
+// The value of this keyword MUST be an integer. This integer MUST be greater than, or equal to, 0.
+// 
+// 5.4.1.2.  Conditions for successful validation
+// 
+// An object instance is valid against "maxProperties" if its number of properties is less than, or equal to, the value of this keyword.
+// 
 func validMaxProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	value := mem.GetValue().(*JSONNode)
 
@@ -95,9 +153,23 @@ func validMaxProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool 
 
 	fmt.Println("    max properties: ", maxCount, " mem count: ", propCount)
 
-	return propCount > maxCount
+	return propCount <= maxCount
 }
 
+// 5.4.2.  minProperties
+// 
+// 5.4.2.1.  Valid values
+// 
+// The value of this keyword MUST be an integer. This integer MUST be greater than, or equal to, 0.
+// 
+// 5.4.2.2.  Conditions for successful validation
+// 
+// An object instance is valid against "minProperties" if its number of properties is greater than, or equal to, the value of this keyword.
+// 
+// 5.4.2.3.  Default value
+// 
+// If this keyword is not present, it may be considered present with a value of 0.
+// 
 func validMinProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	value := mem.GetValue().(*JSONNode)
 
@@ -106,5 +178,5 @@ func validMinProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool 
 
 	fmt.Println("    min properties: ", minCount, " mem count: ", propCount)
 
-	return propCount < minCount
+	return propCount >= minCount
 }

@@ -4,6 +4,16 @@ import (
 	"fmt"
 )
 
+// 5.4.3.  required
+// 
+// 5.4.3.1.  Valid values
+// 
+// The value of this keyword MUST be an array. This array MUST have at least one element. Elements of this array MUST be strings, and MUST be unique.
+// 
+// 5.4.3.2.  Conditions for successful validation
+// 
+// An object instance is valid against this keyword if its property set contains all elements in this keyword's array value.
+// 
 func validRequired(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	var value		*JSONNode
 	if mem.GetMemberType() == "object" {
@@ -32,7 +42,7 @@ func validRequired(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	}
 
 	if !match {
-		arr.dump()
+		// need to implement error stack
 		fmt.Println("        missing required property ", missing)
 	}
 

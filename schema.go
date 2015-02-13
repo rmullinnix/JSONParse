@@ -5,6 +5,7 @@ import (
 )
 
 // primitive types - valid in value ("type": <value>)
+// not currently being used
 const (
 	S_ARRAY=iota
 	S_BOOLEAN
@@ -20,16 +21,24 @@ type JSONSchema struct {
 	doc		*JSONParser
 }
 
-// pointers to the document node, scheme node, and schme node parent
+// validate function signature used to add keyword validators
+// as keywords are encountered, the validator function is called
+// to validate the document section based on the keyword
 type validator func(*JSONNode, *JSONNode, *JSONNode) bool
 
-type keyword struct {
-	keywordValidator	validator
-}
-
+// a list of keywords and associated validators
+//   todo:  add func AddKeywordValidator
 var keywords		map[string]validator
 
 
+//  == from the json schema core spec ==
+// A JSON Schema is a JSON document, and that document MUST be an object. 
+// Object members (or properties) defined by JSON Schema (this specification,
+// or related specifications) are called keywords, or schema keywords.
+// A JSON Schema MAY contain properties which are not schema keywords.
+
+// Initializes a new json schema object used to parse the json schema and
+// use it validate a json document agains that schema
 func NewJSONSchema(source string) *JSONSchema {
 	js := new(JSONSchema)
 
@@ -69,6 +78,8 @@ func NewJSONSchema(source string) *JSONSchema {
 	return js
 }
 
+// validates a document against the schema
+// JSONParser is used to parse the document
 func (js *JSONSchema) ValidateDocument(source string) (bool, []ParseError) {
 	var errors	[]ParseError
 
