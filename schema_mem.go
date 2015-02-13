@@ -4,11 +4,9 @@ import (
 )
 
 func validMember(name string, mem *JSONNode, schemaMem *JSONNode) bool {
-	if name != "anyOf" {
 	nodeState := mem.GetState()
-	if nodeState != VIRGIN {
+	if !(nodeState == VIRGIN || nodeState == NODE_SEMAPHORE) {
 		return nodeState == VALID
-	}
 	}
 		
 	mem.SetState(VALIDATE_IN_PROGRESS)
@@ -36,7 +34,9 @@ func validMember(name string, mem *JSONNode, schemaMem *JSONNode) bool {
 	}
 
 	if valid {
-		mem.SetState(VALID)
+		if nodeState != NODE_SEMAPHORE {
+			mem.SetState(VALID)
+		}
 	} else {
 		mem.SetState(INVALID)
 	}

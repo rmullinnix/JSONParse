@@ -56,6 +56,31 @@ import (
 // 
 // Validation of the instance succeeds if, after these two steps, set "s" is empty.
 // 
+
+// 5.4.1.  maxProperties
+// 
+// 5.4.1.1.  Valid values
+// 
+// The value of this keyword MUST be an integer. This integer MUST be greater than, or equal to, 0.
+// 
+// 5.4.1.2.  Conditions for successful validation
+// 
+// An object instance is valid against "maxProperties" if its number of properties is less than, or equal to, the value of this keyword.
+// 
+// 5.4.2.  minProperties
+// 
+// 5.4.2.1.  Valid values
+// 
+// The value of this keyword MUST be an integer. This integer MUST be greater than, or equal to, 0.
+// 
+// 5.4.2.2.  Conditions for successful validation
+// 
+// An object instance is valid against "minProperties" if its number of properties is greater than, or equal to, the value of this keyword.
+// 
+// 5.4.2.3.  Default value
+// 
+// If this keyword is not present, it may be considered present with a value of 0.
+// 
 func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	doc := mem
 	if mem.GetType() == "member"  {
@@ -90,6 +115,7 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 
 	hasPatterns, patterns := allowPatterns(parent)
  
+	numProps := 0
 	doc.ResetIterate()
 	for {
 		var key		string
@@ -99,6 +125,7 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 			break;
 		}
 
+		numProps++
 		Trace.Println("      Match ", key)
 		var schemaObj	*JSONNode
 		match := false
@@ -131,51 +158,35 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		}
 	}
 
+	if maxProps, found := parent.Find("maxProperties"); found {
+		strMax := maxProps.GetValue().(string)
+		maxNum, err := strconv.Atoi(strMax)
+		if err != nil {
+			OutputError(mem, "Non integer specefied as maxProperties in schema: " + strMax)
+		}
+
+		Trace.Println("    max properties: ", maxNum, " mem count: ", numProps)
+
+		if numProps > maxNum {
+			OutputError(mem, "Maximum <" + strMax + "> of properties exceeded")
+			return false
+		}
+	}
+
+	if minProps, found := parent.Find("minProperties"); found {
+		strMin := minProps.GetValue().(string)
+		minNum, err := strconv.Atoi(strMin)
+		if err != nil {
+			OutputError(mem, "Non integer specefied as minProperties in schema: " + strMin)
+		}
+
+		Trace.Println("    min properties: ", minNum, " mem count: ", numProps)
+
+		if numProps < minNum {
+			OutputError(mem, "Minimum number <" + strMin + "> of properties not supplied")
+			return false
+		}
+	}
 	return true
 }
 
-// 5.4.1.  maxProperties
-// 
-// 5.4.1.1.  Valid values
-// 
-// The value of this keyword MUST be an integer. This integer MUST be greater than, or equal to, 0.
-// 
-// 5.4.1.2.  Conditions for successful validation
-// 
-// An object instance is valid against "maxProperties" if its number of properties is less than, or equal to, the value of this keyword.
-// 
-func validMaxProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
-	value := mem.GetValue().(*JSONNode)
-
-	propCount := value.GetMemberCount()
-	maxCount := schema.GetValue().(int)
-
-	Trace.Println("    max properties: ", maxCount, " mem count: ", propCount)
-
-	return propCount <= maxCount
-}
-
-// 5.4.2.  minProperties
-// 
-// 5.4.2.1.  Valid values
-// 
-// The value of this keyword MUST be an integer. This integer MUST be greater than, or equal to, 0.
-// 
-// 5.4.2.2.  Conditions for successful validation
-// 
-// An object instance is valid against "minProperties" if its number of properties is greater than, or equal to, the value of this keyword.
-// 
-// 5.4.2.3.  Default value
-// 
-// If this keyword is not present, it may be considered present with a value of 0.
-// 
-func validMinProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
-	value := mem.GetValue().(*JSONNode)
-
-	propCount := value.GetMemberCount()
-	minCount, _ := strconv.Atoi(schema.GetValue().(string))
-
-	Trace.Println("    min properties: ", minCount, " mem count: ", propCount)
-
-	return propCount >= minCount
-}

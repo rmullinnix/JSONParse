@@ -17,7 +17,35 @@ import (
 //
 func validAllOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	Trace.Println("    allOf")
-	return true
+	
+	mem.SetState(NODE_SEMAPHORE)
+
+	node := schema.GetValue().(*JSONNode)
+	valid := false
+	node.ResetIterate()
+	for {
+		item := node.GetNext()
+		if item == nil {
+			break
+		}
+
+		item = item.GetValue().(*JSONNode)
+		valid = validMember("allOf", mem, item)
+
+		Trace.Println("   allOf valid", valid)
+		if !valid {
+			break
+		}
+	}
+
+	if !valid {
+		mem.SetState(INVALID)
+		OutputError(mem, "Did not match all the allOf constraints")
+	} else {
+		mem.SetState(VALID)
+	}
+
+	return valid
 }
 
 // 5.5.4.  anyOf
@@ -35,6 +63,8 @@ func validAllOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 func validAnyOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	Trace.Println("    anyOf")
 	
+	mem.SetState(NODE_SEMAPHORE)
+
 	node := schema.GetValue().(*JSONNode)
 	valid := false
 	node.ResetIterate()
@@ -69,7 +99,39 @@ func validAnyOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 // An instance validates successfully against this keyword if it validates successfully against exactly one schema defined by this keyword's value.
 //
 func validOneOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
-	Trace.Println("    allOf")
-	return true
-}
+	Trace.Println("    oneOf")
 
+	mem.SetState(NODE_SEMAPHORE)
+
+	node := schema.GetValue().(*JSONNode)
+	match := 0
+	node.ResetIterate()
+	for {
+		item := node.GetNext()
+		if item == nil {
+			break
+		}
+
+		item = item.GetValue().(*JSONNode)
+
+		valid := validMember("oneOf", mem, item)
+
+		Trace.Println("   oneOf valid", valid)
+		if valid {
+			match++
+		}
+	}
+
+	if match == 1 {
+		mem.SetState(VALID)
+		return true
+	} else {
+		mem.SetState(INVALID)
+		if match > 1 {
+			OutputError(mem, "Matched more than one in a oneOf section")
+		} else {
+			OutputError(mem, "Failed to match one in a oneOf section")
+		}
+		return false
+	}
+}

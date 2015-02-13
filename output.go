@@ -52,12 +52,12 @@ func OutputError(node *JSONNode, errMsg string) {
 	tokenStart := 0
 	tokenEnd := len(parser.tokens)
 
-	if tokenIndex > 10 {
-		tokenStart = tokenIndex - 10
+	if tokenIndex > 15 {
+		tokenStart = tokenIndex - 15
 	}
 
-	if tokenIndex < tokenEnd - 10 {
-		tokenEnd = tokenIndex + 10
+	if tokenIndex < tokenEnd - 15 {
+		tokenEnd = tokenIndex + 15
 	}
 
 	output := parser.prettyTokens(tokenStart, tokenEnd)

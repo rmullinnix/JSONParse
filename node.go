@@ -17,6 +17,7 @@ const (
 	VALID
 	INVALID
 	NODE_MUTEX
+	NODE_SEMAPHORE
 )
 
 // Node for each item in the json tree
@@ -162,6 +163,12 @@ func (jn *JSONNode) GetType() string {
 // members are named values
 func (jn *JSONNode) GetMemberCount() int {
 	return len(jn.namedKids)
+}
+
+// retrieve the number of members in the node
+// members are named values
+func (jn *JSONNode) GetCount() int {
+	return len(jn.unnamedKids)
 }
 
 // set the value type of the members contained in the node

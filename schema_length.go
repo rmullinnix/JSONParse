@@ -1,5 +1,8 @@
 package JSONParse
 
+import (
+	"strconv"
+)
 // 5.2.1.  maxLength
 // 
 // 5.2.1.1.  Valid values
@@ -13,6 +16,20 @@ package JSONParse
 // The length of a string instance is defined as the number of its characters as defined by RFC 4627 [RFC4627].
 // 
 func validMaxLength(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+	docStr := mem.GetValue().(string)
+	strMax := schema.GetValue().(string)
+
+	maxLen, err := strconv.Atoi(strMax)
+	if err != nil {
+		OutputError(mem, "Invalid integer specified in schema: " + strMax)
+		return false
+	}
+
+	if len(docStr) > maxLen {
+		OutputError(mem, "String <" + docStr + "> is greater than maxLength of " + strMax)
+		return false
+	}
+
 	return true
 }
 
@@ -27,11 +44,21 @@ func validMaxLength(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 // A string instance is valid against this keyword if its length is greater than, or equal to, the value of this keyword.
 // 
 // The length of a string instance is defined as the number of its characters as defined by RFC 4627 [RFC4627].
-
-// 5.4.3.2.  Conditions for successful validation
-// 
-// An object instance is valid against this keyword if its property set contains all elements in this keyword's array value.
 // 
 func validMinLength(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+	docStr := mem.GetValue().(string)
+	strMin := schema.GetValue().(string)
+
+	minLen, err := strconv.Atoi(strMin)
+	if err != nil {
+		OutputError(mem, "Invalid integer specified in schema: " + strMin)
+		return false
+	}
+
+	if len(docStr) < minLen {
+		OutputError(mem, "String <" + docStr + "> is less than minLength of " + strMin)
+		return false
+	}
+
 	return true
 }
