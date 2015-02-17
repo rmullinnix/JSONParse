@@ -62,12 +62,12 @@ func OutputError(node *JSONNode, errMsg string) {
 
 	output := parser.prettyTokens(tokenStart, tokenEnd)
 
-	Error.Fatalln(errMsg + "\n" + output)
+	Error.Println(errMsg + "\n" + output)
 }
 
 // formats the json with newlines and indentation
-func (jp *JSONParser) Pretty() {
-	Info.Println(jp.prettyTokens(0, len(jp.tokens)))
+func (jp *JSONParser) Pretty() string {
+	return jp.prettyTokens(0, len(jp.tokens))
 }
 
 func (jp *JSONParser) prettyTokens(start int, end int) string {

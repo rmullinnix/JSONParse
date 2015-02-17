@@ -16,19 +16,36 @@ import (
 // An instance matches successfully if its primitive type is one of the types defined by keyword. Recall: "number" includes "integer".
 //
 // === validates that the type specified in the document is the same as specified in the schema
-//  todo:  support validation against arry of types
+//  todo: if number, need to check if integer
 //
 func validType(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	schemaValue := schema.GetValue().(string)
-	value := mem.GetType()
-	if value == "member" {
-		value = mem.GetMemberType()
-	}
+	value := valueTypeToString(mem.GetValueType())
 
 	if value == schemaValue {
+		Trace.Println("  validType() - match on ", value)
 		return true
 	} else {
-		OutputError(mem, "invalid type: expecting - " + schemaValue + " - found - " + value + "instead")
+		Trace.Println("  validType() - invalid match on ", schemaValue, " -- was ", value)
+		OutputError(mem, "invalid type: expecting - " + schemaValue + " - found - " + value + " instead")
 		return false
+	}
+}
+
+func valueTypeToString(valType ValueType) string {
+	if valType == V_OBJECT {
+		return "object"
+	} else if valType == V_STRING {
+		return "string"
+	} else if valType == V_NUMBER {
+		return "number"
+	} else if valType == V_BOOLEAN {
+		return "boolean"
+	} else if valType == V_ARRAY {
+		return "array"
+	} else if valType == V_NULL {
+		return "null"
+	} else {
+		return "unknown"
 	}
 }

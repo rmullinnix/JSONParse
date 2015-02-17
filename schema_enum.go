@@ -21,12 +21,11 @@ func validEnum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	value := mem.GetValue().(string)
 
 	match := false
-	arr := schema.GetValue().(*JSONNode)
 	valStr := "["
-	if arr.GetType() == "array"  {
-		arr.ResetIterate()
+	if schema.GetValueType() == V_ARRAY  {
+		schema.ResetIterate()
 		for {
-			val := arr.GetNextValue()
+			val := schema.GetNextValue()
 			if val == nil {
 				break
 			}
@@ -39,6 +38,7 @@ func validEnum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		}
 	}
 
+	Trace.Println("  validEnum() match - ", match)
 	if !match {
 		valStr = strings.TrimSuffix(valStr, ", ")
 		valStr += "]"

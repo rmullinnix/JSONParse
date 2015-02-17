@@ -20,6 +20,30 @@ const (
 	NODE_SEMAPHORE
 )
 
+// valid NodeType
+const (
+	N_OBJECT=iota
+	N_MEMBER
+	N_ARRAY
+	N_VALUE
+	N_REFERENCE
+)
+
+// valid ValueType
+const (
+	V_OBJECT=iota
+	V_ARRAY
+	V_REFERENCE
+	V_STRING
+	V_NUMBER
+	V_BOOLEAN
+	V_EMPTY
+	V_NULL
+)
+
+type NodeType		int
+type ValueType		int
+
 // Node for each item in the json tree
 // members are store in a map and array members are stored in an arry
 type JSONNode struct {
@@ -27,8 +51,8 @@ type JSONNode struct {
 	doc		*JSONParser
 	value		interface{}
 	state		NodeState
-	nodeType	string
-	memNodeType	string
+	nodeType	NodeType
+	valType		ValueType
 	name		string
 	root		*JSONNode
 	namedKids	map[string]*JSONNode
@@ -46,8 +70,9 @@ func NewJSONTree(doc *JSONParser) *JSONNode {
 	jn.doc = doc
 	jn.root = jn
 	jn.parent  = nil
-	jn.nodeType = "object"
+	jn.nodeType = N_OBJECT
 	jn.state = VIRGIN
+	jn.name = "root"
 
 	jn.unnamedKids = make([]*JSONNode, 0)
 	jn.namedKids = make(map[string]*JSONNode)
@@ -74,9 +99,10 @@ func (jn *JSONNode) newNode(v_indx int) *JSONNode {
 // creates a new node of type "object"
 func (jn *JSONNode) NewObject(v_indx int) *JSONNode {
 	node := jn.newNode(v_indx)
-	node.nodeType = "object"
+	node.nodeType = N_OBJECT
 
-	jn.value = node
+	jn.unnamedKids = append(jn.unnamedKids, node)
+	jn.valType = V_OBJECT
 
 	return node
 }
@@ -84,10 +110,11 @@ func (jn *JSONNode) NewObject(v_indx int) *JSONNode {
 // creates a new node of type "member"
 func (jn *JSONNode) NewMember(name string, v_indx int) *JSONNode {
 	node := jn.newNode(v_indx)
-	node.nodeType = "member"
+	node.nodeType = N_MEMBER
+	node.name = name
 
 	if name == "$ref" {
-		node.memNodeType = "reference"
+		node.nodeType = N_REFERENCE
 	}
 
 	jn.namedKids[name] = node
@@ -98,9 +125,10 @@ func (jn *JSONNode) NewMember(name string, v_indx int) *JSONNode {
 // creates a new node of type "array"
 func (jn *JSONNode) NewArray(v_indx int) *JSONNode {
 	node := jn.newNode(v_indx)
-	node.nodeType = "array"
+	node.nodeType = N_ARRAY
 
-	jn.value = node
+	jn.unnamedKids = append(jn.unnamedKids, node)
+	jn.valType = V_ARRAY
 
 	return node
 }
@@ -108,7 +136,7 @@ func (jn *JSONNode) NewArray(v_indx int) *JSONNode {
 // creates a new "value" node to be stored in an array
 func (jn *JSONNode) NewArrayValue(v_indx int) *JSONNode {
 	node := jn.newNode(v_indx)
-	node.nodeType = "value"
+	node.nodeType = N_ARRAY
 
 	jn.unnamedKids = append(jn.unnamedKids, node)
 
@@ -116,15 +144,15 @@ func (jn *JSONNode) NewArrayValue(v_indx int) *JSONNode {
 }
 
 // creates a new node of type "reference" to support json reference
-func (jn *JSONNode) NewReference(name string, v_indx int) *JSONNode {
-	node := jn.newNode(v_indx)
-	node.nodeType = "reference"
-	node.name = name
+//func (jn *JSONNode) NewReference(name string, v_indx int) *JSONNode {
+//	node := jn.newNode(v_indx)
+//	node.nodeType = V_REFERENCE
+//	node.name = name
 
-	jn.value = node
+//	jn.namedKids[name] = node
 
-	return node
-}
+//	return node
+//}
 
 // returns the parent node of the current node
 // if the current node is a referenced item, it refers back to the
@@ -150,12 +178,12 @@ func (jn *JSONNode) GetValue() interface{} {
 }
 
 // sets the type of node
-func (jn *JSONNode) SetType(nodeType string) {
+func (jn *JSONNode) SetType(nodeType NodeType) {
 	jn.nodeType = nodeType
 }
 
 // gets the type of node
-func (jn *JSONNode) GetType() string {
+func (jn *JSONNode) GetType() NodeType {
 	return jn.nodeType
 }
 
@@ -172,16 +200,13 @@ func (jn *JSONNode) GetCount() int {
 }
 
 // set the value type of the members contained in the node
-func (jn *JSONNode) SetMemberType(nodeType string) {
-	if nodeType == "member" {
-		panic("invalid node member type")
-	}
-	jn.memNodeType = nodeType
+func (jn *JSONNode) SetValueType(memType ValueType) {
+	jn.valType = memType
 }
 
 // get the value type of the members contained in the node
-func (jn *JSONNode) GetMemberType() string {
-	return jn.memNodeType
+func (jn *JSONNode) GetValueType() ValueType {
+	return jn.valType
 }
 
 // get the current state of the node - used during validation
@@ -240,9 +265,9 @@ func (jn *JSONNode) GetNextMember() (string, *JSONNode) {
 		var hasRef	bool
 
 		if first, hasRef = jn.namedKids["$ref"]; hasRef {
-			if first.memNodeType == "object"  {
+			if first.nodeType == V_OBJECT  {
 				hasRef = false
-			} else if first.memNodeType == "reference" {
+			} else if first.nodeType == V_REFERENCE {
 				first.CollapseReference(jn)
 			} else {
 				hasRef = false
@@ -294,8 +319,9 @@ func (jn *JSONNode) GetNextValue() interface{} {
 // replaces with the members of the referred to json section
 // will link to internal as well as external document sections
 func (jn *JSONNode) CollapseReference(parent *JSONNode) {
-	if jn.memNodeType != "reference" {
-		Error.Panicln(" invalid ref node type", jn.memNodeType)
+	if jn.valType != V_STRING {
+		jn.dump()
+		Error.Panicln(" invalid ref node type", jn.valType)
 //		return
 	}
 
@@ -314,6 +340,8 @@ func (jn *JSONNode) CollapseReference(parent *JSONNode) {
 	// calling GetNextMember() will chase references until valid object
 	refNode.ResetIterate()
 	for {
+		Trace.Println("  $ref replacement")
+		refNode.dump()
 		if key, item := refNode.GetNextMember(); item == nil {
 			break
 		} else {
@@ -326,24 +354,26 @@ func (jn *JSONNode) CollapseReference(parent *JSONNode) {
 // returns the referred node of hte reference.  If the reference has not
 // been resolved yet, it access the references table to set the value
 func (jn *JSONNode) followReference(references map[string]*JSONNode) *JSONNode {
-	ptr := jn.GetValue().(*JSONNode)
+//	ptr := jn.GetValue().(*JSONNode)
 
-	if ptr.GetValue() == nil {
-		Trace.Println("reference ", ptr.name)
-		if ptrValue, found := references[ptr.name]; found {
-			ptr.SetValue(ptrValue)
+	ref := jn.GetValue().(string)
+	Trace.Println("  followReference() ", ref)
+	if len(ref) > 0 {
+		if ptrValue, found := references[jn.GetValue().(string)]; found {
+			jn.SetValue(ptrValue)
+			jn.SetValueType(V_OBJECT)
 		} else {
 			return nil
 		}
 	}
 
-	return ptr.GetValue().(*JSONNode)
+	return jn.GetValue().(*JSONNode)
 }
 
 // internal troubleshooting
 func (jn *JSONNode) dump() {
 	Trace.Println("NodeType: ", jn.nodeType)
-	Trace.Println(" memNodeType: ", jn.memNodeType)
+	Trace.Println(" valType: ", jn.valType)
 	Trace.Println(" name: ", jn.name)
 	Trace.Println(" Named kids")
 

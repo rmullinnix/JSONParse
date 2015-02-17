@@ -51,6 +51,7 @@ func NewJSONSchema(source string, level string) *JSONSchema {
 	keywords["patternProperties"] = validProperties
 	keywords["minProperties"] = validProperties
 	keywords["maxProperties"] = validProperties
+	keywords["items"] = validItems
 	keywords["uniqueItems"] = validUnique
 	keywords["maxItems"] = validMaxItems
 	keywords["minItems"] = validMinItems

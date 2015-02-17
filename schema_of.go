@@ -16,7 +16,7 @@ import (
 // An instance validates successfully against this keyword if it validates successfully against all schemas defined by this keyword's value.
 //
 func validAllOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
-	Trace.Println("    allOf")
+	Trace.Println("  allOf()")
 	
 	mem.SetState(NODE_SEMAPHORE)
 
@@ -61,7 +61,7 @@ func validAllOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 // An instance validates successfully against this keyword if it validates successfully against at least one schema defined by this keyword's value.
 // 
 func validAnyOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
-	Trace.Println("    anyOf")
+	Trace.Println("  anyOf()")
 	
 	mem.SetState(NODE_SEMAPHORE)
 
@@ -99,20 +99,20 @@ func validAnyOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 // An instance validates successfully against this keyword if it validates successfully against exactly one schema defined by this keyword's value.
 //
 func validOneOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
-	Trace.Println("    oneOf")
+	Trace.Println("  oneOf()")
 
 	mem.SetState(NODE_SEMAPHORE)
 
-	node := schema.GetValue().(*JSONNode)
+//	node := schema.GetValue().(*JSONNode)
 	match := 0
-	node.ResetIterate()
+	schema.ResetIterate()
 	for {
-		item := node.GetNext()
+		item := schema.GetNext()
 		if item == nil {
 			break
 		}
 
-		item = item.GetValue().(*JSONNode)
+//		item = item.GetValue().(*JSONNode)
 
 		valid := validMember("oneOf", mem, item)
 

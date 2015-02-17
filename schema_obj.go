@@ -9,8 +9,10 @@ func (js *JSONSchema) validObject(doc *JSONNode, schema *JSONNode) bool {
 
 	Trace.Println(" Entering validObject")
 
+	schema.dump()
 	if item, found = schema.Find("properties"); found {
-		item = item.GetValue().(*JSONNode)
+		item.ResetIterate()
+		item = item.GetNext()
 	} else {
 		Error.Panicln("invalid schema: no properties: definition")
 	}

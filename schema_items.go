@@ -28,8 +28,32 @@ import (
 //     is an array, the instance is valid if its size is less than, or equal to, the
 //     size of "items".
 //
+func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+	schema.ResetIterate()
+	items := schema.GetNext() // items is of type object
+	
+	arrNode := mem
+
+	Trace.Println("  vaildItems()")
+	arrNode.ResetIterate()
+	for {
+		item := arrNode.GetNext()
+		if item == nil {
+			break
+		}
+
+		Trace.Println("  items: call validMember()")
+		valid := validMember("items", item, items)
+		if !valid {
+			return false
+		}
+	}
+	
+	return true
+}
+
 func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
-	Trace.Println("  validAddtionalItems")
+	Trace.Println("  validAddtionalItems()")
 	if _, found := mem.Find("items"); !found {
 		return true
 	}
@@ -43,9 +67,9 @@ func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) boo
 	items, found := parent.Find("items")
 	schemaCount := 0
 	if found {
-		if items.GetType() == "array" {
+		if items.GetType() == N_ARRAY {
 			schemaCount = items.GetCount()
-		} else if items.GetType() == "object" {
+		} else if items.GetType() == N_OBJECT {
 			schemaCount = items.GetMemberCount()
 		}
 	} else {
@@ -55,9 +79,9 @@ func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) boo
 	memCount := 0
 	items, found = mem.Find("items")
 	if found {
-		if items.GetType() == "array" {
+		if items.GetType() == N_ARRAY {
 			memCount = items.GetCount()
-		} else if items.GetType() == "object" {
+		} else if items.GetType() == N_OBJECT {
 			memCount = items.GetMemberCount()
 		}
 	} else {
@@ -79,9 +103,7 @@ func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) boo
 // An array instance is valid against "maxItems" if its size is less than, or equal to, the value of this keyword.
 // 
 func validMaxItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
-	value := mem.GetValue().(*JSONNode)
-
-	itemCount := value.GetCount()
+	itemCount := mem.GetCount()
 
 	strMax := schema.GetValue().(string)
 	maxCount, err := strconv.Atoi(strMax)
@@ -115,9 +137,7 @@ func validMaxItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 // If this keyword is not present, it may be considered present with a value of 0.
 // 
 func validMinItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
-	value := mem.GetValue().(*JSONNode)
-
-	itemCount := value.GetCount()
+	itemCount := mem.GetCount()
 
 	strMin := schema.GetValue().(string)
 	minCount, err := strconv.Atoi(strMin)
@@ -151,7 +171,7 @@ func validMinItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 // If not present, this keyword may be considered present with boolean value false.
 //
 func validUnique(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
-	arr := mem.GetValue().(*JSONNode)
+	arr := mem
 
 	duplicate := ""
 	unique := schema.GetValue().(bool)
@@ -167,9 +187,9 @@ func validUnique(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		}
 		token := ""
 
-		if val.GetType() == "object" {
+		if val.GetValueType() == V_OBJECT {
 			token = tokenizeObject(val)
-		} else if val.GetType() == "string" {
+		} else if val.GetValueType() == V_STRING {
 			token = val.GetValue().(string)
 		}
 

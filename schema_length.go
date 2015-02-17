@@ -1,6 +1,7 @@
 package JSONParse
 
 import (
+	"unicode/utf8"
 	"strconv"
 )
 // 5.2.1.  maxLength
@@ -16,17 +17,26 @@ import (
 // The length of a string instance is defined as the number of its characters as defined by RFC 4627 [RFC4627].
 // 
 func validMaxLength(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+	if mem.GetValueType() != V_STRING {
+		Trace.Println("maxLength against non-string")
+		return true
+	}
+
 	docStr := mem.GetValue().(string)
+	Trace.Println(strconv.UnquoteChar(docStr, 0))
+	docLen := utf8.RuneCount([]byte(docStr))
+
 	strMax := schema.GetValue().(string)
 
+	Trace.Println("  validMaxLength() - compare doc len ", docStr, " to shcema len ", strMax)
 	maxLen, err := strconv.Atoi(strMax)
 	if err != nil {
 		OutputError(mem, "Invalid integer specified in schema: " + strMax)
 		return false
 	}
 
-	if len(docStr) > maxLen {
-		OutputError(mem, "String <" + docStr + "> is greater than maxLength of " + strMax)
+	if docLen > maxLen {
+		OutputError(mem, "String <" + docStr + "> with length " + strconv.Itoa(docLen) + " is greater than maxLength of " + strMax)
 		return false
 	}
 
@@ -49,6 +59,7 @@ func validMinLength(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	docStr := mem.GetValue().(string)
 	strMin := schema.GetValue().(string)
 
+	Trace.Println("  validMaxLength() - compare doc len ", docStr, " to shcema len ", strMin)
 	minLen, err := strconv.Atoi(strMin)
 	if err != nil {
 		OutputError(mem, "Invalid integer specified in schema: " + strMin)

@@ -10,7 +10,13 @@ import (
 // as they are encounter -- see node.go
 func (jp *JSONParser) resolveReferences() {
 	for key, _ := range jp.references {
-		jp.references[key] = jp.refObject(jp.jsonDoc, key)
+		ref := jp.refObject(jp.jsonDoc, key)
+		if ref == nil {
+			jp.addError("Unable to resolve reference " + key, JP_FATAL)
+			OutputError(jp.references[key], "Invalid json reference " + key)
+		} else {
+			jp.references[key] = ref
+		}
 	}
 	Trace.Println("== REFERENCE TABLE ==")
 	Trace.Println(jp.references)
@@ -29,16 +35,17 @@ func (jp *JSONParser)refObject(doc *JSONNode, ref string) *JSONNode {
 			return doc
 		}
 
-		subparts := strings.Split(ref[1:], "/")
+		subparts := strings.Split(ref[2:], "/")
 		refObj := doc
 		match := 0
 		for i := 0; i < len(subparts); i++ {
 			if item, found := refObj.Find(subparts[i]); found {
-				refObj = item.GetValue().(*JSONNode)
+				item.ResetIterate()
+				refObj = item.GetNext()
 				match++
 			}
 		}
-		if match == len(subparts) - 1 {
+		if match == len(subparts) {
 			return refObj
 		}
 	} else if strings.HasPrefix(ref, "http")  {
@@ -58,8 +65,6 @@ func (jp *JSONParser)refObject(doc *JSONNode, ref string) *JSONNode {
 
 		return jp.refObject(eDoc, "#" + parts[1])
 	}
-	jp.addError("Unable to resolve reference " + ref, JP_FATAL)
-	OutputError(doc, "Invalid json reference " + ref)
 
 	return nil
 }

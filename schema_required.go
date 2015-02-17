@@ -14,17 +14,12 @@ import (
 // An object instance is valid against this keyword if its property set contains all elements in this keyword's array value.
 // 
 func validRequired(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
-	var value		*JSONNode
-	if mem.GetMemberType() == "object" {
-		value = mem.GetValue().(*JSONNode)
-	} else {	
-		value = mem
-	}
-
 	match := true
 	missing := ""
-	arr := schema.GetValue().(*JSONNode)
-	if arr.GetType() == "array"  {
+	arr := schema
+
+	Trace.Println("  validRequired()")
+	if arr.GetType() == N_ARRAY  {
 		arr.ResetIterate()
 		for {
 			val := arr.GetNextValue()
@@ -32,7 +27,7 @@ func validRequired(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 				break
 			}
 
-			if _, found := value.Find(val.(string)); !found  {
+			if _, found := mem.Find(val.(string)); !found  {
 				match = false
 				missing = val.(string)
 				break

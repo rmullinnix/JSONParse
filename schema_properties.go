@@ -83,9 +83,6 @@ import (
 // 
 func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	doc := mem
-	if mem.GetType() == "member"  {
-		doc = mem.GetValue().(*JSONNode)
-	}
 
 	if doc.GetState() == NODE_MUTEX {
 		return true
@@ -93,28 +90,31 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		doc.SetState(NODE_MUTEX)
 	}
 
+	if doc.GetType() == N_MEMBER || doc.GetType() == N_ARRAY {
+		doc.ResetIterate()
+		doc = doc.GetNext()
+	}
+
 	var item	*JSONNode
 	found := false
 
 	if item, found = parent.Find("properties"); found {
-		item = item.GetValue().(*JSONNode)
+		item.ResetIterate()
+		item = item.GetNext()
 	}
 
 	var addtlProps		*JSONNode
 	allowAddtl := false
 
 	if addtlProps, allowAddtl = parent.Find("additionalProperties"); allowAddtl {
-		if addtlProps.GetType() == "member" {
-			addtlProps = addtlProps.GetValue().(*JSONNode)
-		} else {
-			if addtlProps.GetMemberType() == "boolean" {
-				allowAddtl = addtlProps.GetValue().(bool)
-			}
+		if addtlProps.GetValueType() == V_BOOLEAN {
+			allowAddtl = addtlProps.GetValue().(bool)
 		}
 	}
 
 	hasPatterns, patterns := allowPatterns(parent)
  
+	doc.dump()
 	numProps := 0
 	doc.ResetIterate()
 	for {
@@ -122,16 +122,18 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		var mem		*JSONNode
 
 		if key, mem = doc.GetNextMember(); mem == nil {
+			Trace.Println("  validProperties() end of members")
 			break;
 		}
 
-		numProps++
 		Trace.Println("      Match ", key)
+		numProps++
 		var schemaObj	*JSONNode
 		match := false
 		if item != nil {
 			if schemaMem, found := item.Find(key); found {
-				schemaObj = schemaMem.GetValue().(*JSONNode)
+				schemaMem.ResetIterate()
+				schemaObj = schemaMem.GetNext()
 				match = true
 			}
 		}
@@ -139,8 +141,10 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		if !match && hasPatterns {
 			for pattern, node := range patterns {
 				regPattern := regexp.MustCompile(pattern)
+				Trace.Println("  validProperties() - match pattern <" + pattern + "> against key " + key)
 				if match = regPattern.MatchString(key); match {
-					schemaObj = node.GetValue().(*JSONNode)
+					node.ResetIterate()
+					schemaObj = node.GetNext()
 					break;
 				}
 			}
@@ -152,10 +156,14 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		}
 
 		if match {
+			Trace.Println("  == match successful == ")
 			validMember(key, mem, schemaObj)
 		} else if addtlProps != nil {
-			Warning.Println("      member: ", key, " not found") 
+			Warning.Println("  --  member: ", key, " not found --") 
+		} else {
+			Trace.Println("  ++ match by addtionalProperties ++")
 		}
+			
 	}
 
 	if maxProps, found := parent.Find("maxProperties"); found {

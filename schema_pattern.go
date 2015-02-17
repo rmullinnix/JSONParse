@@ -2,6 +2,7 @@ package JSONParse
 
 import (
 	"regexp"
+	"strings"
 )
 
 func allowPatterns(mem *JSONNode) (bool, map[string]*JSONNode) {
@@ -10,10 +11,12 @@ func allowPatterns(mem *JSONNode) (bool, map[string]*JSONNode) {
 	var found	bool
 
 	if item, found = mem.Find("patternProperties"); !found {
+		Trace.Println("  allowPatterns() - no")
 		return false, patterns
 	}
 		
-	item = item.GetValue().(*JSONNode)
+	item.ResetIterate()
+	item = item.GetNext()
 	patterns = make(map[string]*JSONNode)
 	item.ResetIterate()
 
@@ -26,6 +29,7 @@ func allowPatterns(mem *JSONNode) (bool, map[string]*JSONNode) {
 		patterns[key] = item
 	}
 	
+	Trace.Println("  allowPatterns() - ", patterns)
 	return true, patterns
 }
 
@@ -42,25 +46,21 @@ func allowPatterns(mem *JSONNode) (bool, map[string]*JSONNode) {
 // instance successfully. Recall: regular expressions are not implicitly anchored.
 //
 func validPattern(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
-	Trace.Println("  validPattern")
+	Trace.Println("  validPattern()")
 
-	var value		*JSONNode
-	if schema.GetMemberType() == "object" {
-		value = schema.GetValue().(*JSONNode)
-	} else {	
-		value = schema
-	}
-
+	value := schema
 	pattern := value.GetValue().(string)
 
 	key := mem.GetValue().(string)
-	Trace.Println("    match pattern <" + pattern + "> against " + key)
 
+	pattern = strings.Replace(pattern, `\\`, `\`, -1)
 	patternReg := regexp.MustCompile(pattern)
 	if match := patternReg.MatchString(key); match {
+		Trace.Println("    match pattern <" + pattern + "> against " + key + " - true")
 		return true
 	}
 
+	Trace.Println("    match pattern <" + pattern + "> against " + key + " - false")
 	return false
 }
 

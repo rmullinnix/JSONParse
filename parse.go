@@ -227,6 +227,8 @@ func (jp *JSONParser) parseMember(mem *JSONNode) bool {
 	}
 
 	if curTokenType == REF {
+		mem.SetType(V_REFERENCE)
+		Trace.Println("ref ptr")
 		return jp.parseRefPtr(mem)
 	}
 
@@ -241,25 +243,32 @@ func (jp *JSONParser) parseValue(val *JSONNode) bool {
 	}
 
 	if jp.curTokenType == BEGIN_OBJECT {
-		val.SetMemberType("object")
+		val.SetValueType(V_OBJECT)
 		obj := val.NewObject(jp.curIndex)
 
 		return jp.parseObject(obj)
 	} else if jp.curTokenType == BEGIN_ARRAY {
-		val.SetMemberType("array")
-		arr := val.NewArray(jp.curIndex)
+		val.SetValueType(V_ARRAY)
+//		arr := val.NewArray(jp.curIndex)
 
-		return jp.parseArray(arr)
+		return jp.parseArray(val)
 	} else {
-		val.SetType(tokenToString(jp.curTokenType))
+		//val.SetType(N_VALUE)
 		if jp.curTokenType == J_TRUE {
-			val.SetMemberType("boolean")
+			val.SetValueType(V_BOOLEAN)
 			val.SetValue(true)
 		} else if jp.curTokenType == J_FALSE {
-			val.SetMemberType("boolean")
+			val.SetValueType(V_BOOLEAN)
 			val.SetValue(false)
-		} else {
-			val.SetMemberType(strings.ToLower(tokenToString(jp.curTokenType)))
+		} else if jp.curTokenType == J_NULL {
+			val.SetValueType(V_NULL)
+			val.SetValue(jp.curTokenVar)
+		} else if jp.curTokenType == NUMBER {
+			val.SetValueType(V_NUMBER)
+			// numbers stored as strings, don't know if int or float yet
+			val.SetValue(jp.curTokenVar)
+		} else if jp.curTokenType == STRING {
+			val.SetValueType(V_STRING)
 			val.SetValue(jp.curTokenVar)
 		}
 	}
@@ -288,16 +297,19 @@ func (jp *JSONParser) parseRefPtr(ref *JSONNode) bool {
 
 	// definition of $ref, not actual $ref
 	if jp.curTokenType == BEGIN_OBJECT {
-		ref.SetType("string")
-		ref.SetMemberType("object")
+		Trace.Println("$ref object")
+		ref.SetType(N_OBJECT)
+		ref.SetValueType(V_OBJECT)
 		obj := ref.NewObject(jp.curIndex)
 
 		return jp.parseObject(obj)
 	}
 
-	ref.NewReference(jp.curTokenVar, jp.curIndex)
+	ref.SetValueType(V_STRING)
+	ref.SetValue(jp.curTokenVar)
+//	ref.NewReference(jp.curTokenVar, jp.curIndex)
 
-	jp.references[jp.curTokenVar] = nil
+	jp.references[jp.curTokenVar] = ref
 
 	return true
 }
@@ -315,12 +327,15 @@ func (jp *JSONParser) parseRefPtr(ref *JSONNode) bool {
 // 
 func (jp *JSONParser) parseObject(obj *JSONNode) bool {
 	if jp.curTokenType != BEGIN_OBJECT {
+		Trace.Println("begin object error")
+		panic("begin object error")
 		return false
 	}
 
 	for {
 		err := jp.expectToken(STRING | END_OBJECT | REF)
 		if err != nil {
+			Trace.Println("expect token error")
 			return false
 		}
 
@@ -331,11 +346,13 @@ func (jp *JSONParser) parseObject(obj *JSONNode) bool {
 		mem := obj.NewMember(jp.curTokenVar, jp.curIndex)
 
 		if !jp.parseMember(mem) {
+			Trace.Println("parse mem failed")
 			return false
 		}
 
 		err = jp.expectToken(VALUE_SEPARATOR | END_OBJECT)
 		if err != nil {
+			Trace.Println("expect token error 2")
 			return false
 		}
 
@@ -507,6 +524,7 @@ func (jp *JSONParser) addError(errText string, level int) *ParseError {
 	pError.ErrorLevel = level
 	pError.Offset = jp.curIndex
 
+	Trace.Println(jp.prettyTokens(jp.curIndex-4, jp.curIndex+4))
 	jp.errorList = append(jp.errorList, pError)
 
 	return &pError

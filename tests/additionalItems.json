@@ -1,0 +1,5 @@
+{
+	"testcases":  {
+		"$ref": "https://github.com/json-schema/JSON-Schema-Test-Suite/blob/develop/tests/draft4/additionalItems.json#"
+	}
+}

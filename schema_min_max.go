@@ -23,6 +23,7 @@ func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	strSchemaNum := schema.GetValue().(string)
 
 	if strings.Index(strDocNum, ".") > -1 {
+		Trace.Println("  validMutlipleOf() - with float")
 		fDocNum, dErr := strconv.ParseFloat(strDocNum, 64)
 		if dErr != nil {
 			OutputError(mem, "Invalid number in document " + strDocNum)
@@ -38,6 +39,7 @@ func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 			return false
 		}
 	 } else {
+		Trace.Println("  validMutlipleOf() - with int")
 		iDocNum, dErr := strconv.Atoi(strDocNum)
 		if dErr != nil {
 			OutputError(mem, "Invalid number in document " + strDocNum)
@@ -84,10 +86,12 @@ func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 //
 func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	doc := mem
-	if mem.GetType() == "member"  {
-		doc = mem.GetValue().(*JSONNode)
+	if doc.GetValueType() != V_NUMBER {
+		Warning.Println("valid max against non number")
+		return true
 	}
 
+	Trace.Println("  validMaximum()")
 	if doc.GetState() == NODE_MUTEX {
 		return true
 	} else  {
@@ -100,7 +104,6 @@ func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	hasMax := false
 
        	if item, found := parent.Find("maximum"); found {
-		item := item.GetValue().(*JSONNode)
 		strSchemaMax = item.GetValue().(string)
 		hasMax = true
 	}
@@ -111,7 +114,6 @@ func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 			OutputError(mem, "exclusiveMaximum is present without correspoding maximum")
 			return false
 		}
-		item := item.GetValue().(*JSONNode)
 		eMax = item.GetValue().(bool)
 	}
 
@@ -184,10 +186,13 @@ func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 //
 func validMinimum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	doc := mem
-	if mem.GetType() == "member"  {
-		doc = mem.GetValue().(*JSONNode)
+	if doc.GetValueType() != V_NUMBER {
+		Warning.Println("valid max against non number")
+		return true
 	}
+	
 
+	Trace.Println("  validMinimum()")
 	if doc.GetState() == NODE_MUTEX {
 		return true
 	} else  {
@@ -200,7 +205,6 @@ func validMinimum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	hasMin := false
 
        	if item, found := parent.Find("minimum"); found {
-		item := item.GetValue().(*JSONNode)
 		strSchemaMin = item.GetValue().(string)
 		hasMin = true
 	}
@@ -211,7 +215,6 @@ func validMinimum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 			OutputError(mem, "exclusiveMinium is present without correspoding minimum")
 			return false
 		}
-		item := item.GetValue().(*JSONNode)
 		eMin = item.GetValue().(bool)
 	}
 

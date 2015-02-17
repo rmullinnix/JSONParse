@@ -13,21 +13,17 @@ func validMember(name string, mem *JSONNode, schemaMem *JSONNode) bool {
 
 	valid := true
 
-	if name == "anyOf" {
-		schemaMem.dump()
-	}
-	Trace.Println("validate individual member: ", name, " as ", mem.GetType(), " against ", schemaMem.GetType());
-	if schemaMem.GetType() == "object" {
+	if schemaMem.GetType() == N_OBJECT {
 		schemaMem.ResetIterate()
 		for {
 			key, item := schemaMem.GetNextMember()
-			Trace.Println("  validate ", name, " against schema mem ", key)
 			if item == nil {
 				break;
 			}
 
 			item.SetState(VALIDATE_IN_PROGRESS)
 			if validator, found := keywords[key]; found {
+				Trace.Println("  validMember()", name, " against schema mem ", key)
 				valid = validator(mem, item, schemaMem)
 			}
 		}
