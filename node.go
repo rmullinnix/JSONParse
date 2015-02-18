@@ -334,18 +334,18 @@ func (jn *JSONNode) GetJson() string {
 	} else if jn.nodeType == N_MEMBER {
 		output += `"` + jn.name + `":`
 
-		output += jn.getValueJson()
+		output += jn.GetValueJson()
 	}
 
 	return output
 }
 
-func (jn *JSONNode) getValueJson() string {
+func (jn *JSONNode) GetValueJson() string {
 	output := ""
 	if jn.valType == V_OBJECT { 
 		output += jn.getKidsJson()
 	} else if jn.valType == V_ARRAY {
-		output += jn.getValueKidsJson()
+		output += "[" + jn.getValueKidsJson() +"]"
 	} else if jn.valType == V_NUMBER {
 		output += " " + jn.value.(string)
 	} else if jn.valType == V_NULL {
@@ -396,14 +396,13 @@ func (jn *JSONNode) getValueKidsJson() string {
 	output := ""
 	jn.ResetIterate()
 
-	jn.ResetIterate()
 	for {
 		item := jn.GetNext()
 		if item == nil {
 			break
 		}
 
-		output += item.getValueJson()
+		output += item.GetValueJson()
 		output += ","
 	}
 	output = strings.TrimSuffix(output, ",")

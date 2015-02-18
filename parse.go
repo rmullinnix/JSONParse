@@ -191,9 +191,11 @@ func (jp *JSONParser) parseArray(arr *JSONNode) bool {
 	}
 
 	for {
-		val := arr.NewArrayValue(jp.curIndex)
-		if !jp.parseValue(val) {
-			break
+		if jp.tokens[jp.curIndex + 1] != END_ARRAY {
+			val := arr.NewArrayValue(jp.curIndex)
+			if !jp.parseValue(val) {
+				break
+			}
 		}
 
 		err := jp.expectToken(VALUE_SEPARATOR | END_ARRAY)
@@ -384,7 +386,7 @@ func (jp *JSONParser) nextToken() int {
 	jp.curIndex++
 	jp.curTokenType = jp.tokens[jp.curIndex]
 
-	if jp.curTokenType == STRING || jp.curTokenType == NUMBER {
+	if (jp.curTokenType == STRING) || (jp.curTokenType == NUMBER) {
 		jp.curIndex++
 		jp.curTokenVar = jp.variables[jp.tokens[jp.curIndex]]
 	} else if jp.curTokenType == REF {
@@ -520,7 +522,8 @@ func (jp *JSONParser) addError(errText string, level int) *ParseError {
 	pError.ErrorLevel = level
 	pError.Offset = jp.curIndex
 
-	Trace.Println(jp.prettyTokens(jp.curIndex-4, jp.curIndex+4))
+	Trace.Println(errText)
+//	Trace.Println(jp.prettyTokens(jp.curIndex-4, jp.curIndex+4))
 	jp.errorList = append(jp.errorList, pError)
 
 	return &pError

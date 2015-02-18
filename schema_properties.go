@@ -162,7 +162,7 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 		if match {
 			totMatch++
 			Trace.Println("  == match successful == ")
-			valid = valid && validMember(key, mem, schemaObj, true)
+			valid = valid && validMember(key, mem, schemaObj, false)
 		} else if addtlProps != nil {
 			Warning.Println("  --  member: ", key, " not found --") 
 		} else {

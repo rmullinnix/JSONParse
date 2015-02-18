@@ -1,8 +1,9 @@
 package JSONParse
 
 import (
-	"unicode/utf8"
+//	"unicode/utf8"
 	"strconv"
+	"strings"
 )
 // 5.2.1.  maxLength
 // 
@@ -22,9 +23,14 @@ func validMaxLength(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sch
 		return true
 	}
 
+	docLen := 0
 	docStr := mem.GetValue().(string)
-	Trace.Println(strconv.UnquoteChar(docStr, 0))
-	docLen := utf8.RuneCount([]byte(docStr))
+	if count := strings.Count(docStr, "\\u"); count > 0 {
+		// need to figure out how to encode
+		docLen = len(docStr)
+	} else {
+		docLen = len(docStr)
+	}
 
 	strMax := schema.GetValue().(string)
 
@@ -56,6 +62,11 @@ func validMaxLength(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sch
 // The length of a string instance is defined as the number of its characters as defined by RFC 4627 [RFC4627].
 // 
 func validMinLength(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	if mem.GetValueType() != V_STRING {
+		Trace.Println("minLength against non-string")
+		return true
+	}
+
 	docStr := mem.GetValue().(string)
 	strMin := schema.GetValue().(string)
 

@@ -69,8 +69,7 @@ func NewJSONSchema(source string, level string) *JSONSchema {
 
 // validates a document against the schema
 // JSONParser is used to parse the document
-func (js *JSONSchema) ValidateDocument(source string) (bool, []ParseError) {
-	var errors	[]ParseError
+func (js *JSONSchema) ValidateDocument(source string) (bool, *SchemaErrors) {
 
 	jp := NewJSONParser(source, 10, "default")
 	jp.Parse()
@@ -82,5 +81,5 @@ func (js *JSONSchema) ValidateDocument(source string) (bool, []ParseError) {
 	result := js.validObject(jp.jsonDoc, js.schema.jsonDoc)
 
 	schemaErrors.Output()
-	return result, errors
+	return result, schemaErrors
 }

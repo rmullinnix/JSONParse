@@ -103,6 +103,11 @@ func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, err
 // An array instance is valid against "maxItems" if its size is less than, or equal to, the value of this keyword.
 // 
 func validMaxItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	if mem.GetValueType() != V_ARRAY {
+		Trace.Println("minItems() - items is not an array")
+		return true
+	}
+
 	itemCount := mem.GetCount()
 
 	strMax := schema.GetValue().(string)
@@ -137,6 +142,11 @@ func validMaxItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sche
 // If this keyword is not present, it may be considered present with a value of 0.
 // 
 func validMinItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	if mem.GetValueType() != V_ARRAY {
+		Trace.Println("minItems() - items is not an array")
+		return true
+	}
+
 	itemCount := mem.GetCount()
 
 	strMin := schema.GetValue().(string)

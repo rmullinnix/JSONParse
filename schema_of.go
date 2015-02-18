@@ -20,17 +20,21 @@ func validAllOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 	
 	mem.SetState(NODE_SEMAPHORE)
 
-	node := schema.GetValue().(*JSONNode)
 	valid := false
-	node.ResetIterate()
+	schema.ResetIterate()
 	for {
-		item := node.GetNext()
+		item := schema.GetNext()
 		if item == nil {
 			break
 		}
 
-		item = item.GetValue().(*JSONNode)
-		valid = validMember("allOf", mem, item, false)
+		of := item
+		if of.GetValueType () == V_OBJECT {
+			of.ResetIterate()
+			of = of.GetNext()
+		}
+
+		valid = validMember("allOf", of, mem, false)
 
 		Trace.Println("   allOf valid", valid)
 		if !valid {
