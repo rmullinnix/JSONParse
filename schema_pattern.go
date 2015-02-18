@@ -45,7 +45,7 @@ func allowPatterns(mem *JSONNode) (bool, map[string]*JSONNode) {
 // A string instance is considered valid if the regular expression matches the
 // instance successfully. Recall: regular expressions are not implicitly anchored.
 //
-func validPattern(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validPattern(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	Trace.Println("  validPattern()")
 
 	value := schema

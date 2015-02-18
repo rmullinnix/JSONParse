@@ -18,7 +18,7 @@ import (
 // A numeric instance is valid against "multipleOf" if the result of the 
 // division of the instance by this keyword's value is an integer.
 //
-func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	strDocNum := mem.GetValue().(string)
 	strSchemaNum := schema.GetValue().(string)
 
@@ -26,33 +26,33 @@ func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		Trace.Println("  validMutlipleOf() - with float")
 		fDocNum, dErr := strconv.ParseFloat(strDocNum, 64)
 		if dErr != nil {
-			OutputError(mem, "Invalid number in document " + strDocNum)
+			errs.Add(mem, "Invalid number in document " + strDocNum, JP_ERROR)
 		}
 		fSchemaNum, iErr := strconv.ParseFloat(strSchemaNum, 64)
 		if iErr != nil {
-			OutputError(mem, "Invalid number in schema " + strSchemaNum)
+			errs.Add(mem, "Invalid number in schema " + strSchemaNum, JP_WARNING)
 		}
 
 		rem := math.Remainder(fDocNum, fSchemaNum)
 		if rem != 0 {
-			OutputError(mem, "Number " + strDocNum + " is not multipleOf " + strSchemaNum)
+			errs.Add(mem, "Number " + strDocNum + " is not multipleOf " + strSchemaNum, JP_ERROR)
 			return false
 		}
 	 } else {
 		Trace.Println("  validMutlipleOf() - with int")
 		iDocNum, dErr := strconv.Atoi(strDocNum)
 		if dErr != nil {
-			OutputError(mem, "Invalid number in document " + strDocNum)
+			errs.Add(mem, "Invalid number in document " + strDocNum, JP_ERROR)
 		}
 		iSchemaNum, iErr := strconv.Atoi(strSchemaNum)
 		if iErr != nil {
-			OutputError(mem, "Invalid number in schema " + strSchemaNum)
+			errs.Add(mem, "Invalid number in schema " + strSchemaNum, JP_WARNING)
 		}
 
 		rem := iDocNum % iSchemaNum
 
 		if rem != 0 {
-			OutputError(mem, "Number " + strDocNum + " is not multipleOf " + strSchemaNum)
+			errs.Add(mem, "Number " + strDocNum + " is not multipleOf " + strSchemaNum, JP_ERROR)
 			return false
 		}
 	}
@@ -84,7 +84,7 @@ func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 // "exclusiveMaximum", if absent, may be considered as being present with 
 // boolean value false.
 //
-func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	doc := mem
 	if doc.GetValueType() != V_NUMBER {
 		Warning.Println("valid max against non number")
@@ -111,7 +111,7 @@ func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	eMax := false
        	if item, found := parent.Find("exclusiveMaximum"); found {
 		if !hasMax {
-			OutputError(mem, "exclusiveMaximum is present without correspoding maximum")
+			errs.Add(mem, "exclusiveMaximum is present without correspoding maximum", JP_ERROR)
 			return false
 		}
 		eMax = item.GetValue().(bool)
@@ -120,44 +120,44 @@ func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	if strings.Index(strDocNum, ".") > -1 {
 		fDocNum, dErr := strconv.ParseFloat(strDocNum, 64)
 		if dErr != nil {
-			OutputError(mem, "Invalid number in document " + strDocNum)
+			errs.Add(mem, "Invalid number in document " + strDocNum, JP_ERROR)
 		}
 		fSchemaMax, iErr := strconv.ParseFloat(strSchemaMax, 64)
 		if iErr != nil {
-			OutputError(mem, "Invalid number in schema " + strSchemaMax)
+			errs.Add(mem, "Invalid number in schema " + strSchemaMax, JP_WARNING)
 		}
 
 		if eMax {
 			if fDocNum < fSchemaMax {
 				return true
 			} else {
-				OutputError(mem, "Document number " + strDocNum + " is not less than maximum " + strSchemaMax)
+				errs.Add(mem, "Document number " + strDocNum + " is not less than maximum " + strSchemaMax, JP_ERROR)
 			}
 		} else if fDocNum <= fSchemaMax {
 			return true
 		} else {
-			OutputError(mem, "Document number " + strDocNum + " is not less than or equal to maximum " + strSchemaMax)
+			errs.Add(mem, "Document number " + strDocNum + " is not less than or equal to maximum " + strSchemaMax, JP_ERROR)
 		}
 	 } else {
 		iDocNum, dErr := strconv.Atoi(strDocNum)
 		if dErr != nil {
-			OutputError(mem, "Invalid number in document " + strDocNum)
+			errs.Add(mem, "Invalid number in document " + strDocNum, JP_ERROR)
 		}
 		iSchemaMax, iErr := strconv.Atoi(strSchemaMax)
 		if iErr != nil {
-			OutputError(mem, "Invalid number in schema " + strSchemaMax)
+			errs.Add(mem, "Invalid number in schema " + strSchemaMax, JP_WARNING)
 		}
 
 		if eMax {
 			if iDocNum < iSchemaMax {
 				return true
 			} else {
-				OutputError(mem, "Document number " + strDocNum + " is not less than maximum " + strSchemaMax)
+				errs.Add(mem, "Document number " + strDocNum + " is not less than maximum " + strSchemaMax, JP_ERROR)
 			}
 		} else if iDocNum <= iSchemaMax {
 			return true
 		} else {
-			OutputError(mem, "Document number " + strDocNum + " is not less than or equal to maximum " + strSchemaMax)
+			errs.Add(mem, "Document number " + strDocNum + " is not less than or equal to maximum " + strSchemaMax, JP_ERROR)
 		}
 	}
 
@@ -184,7 +184,7 @@ func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 //
 // "exclusiveMinimum", if absent, may be considered as being present with boolean value false.
 //
-func validMinimum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validMinimum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	doc := mem
 	if doc.GetValueType() != V_NUMBER {
 		Warning.Println("valid max against non number")
@@ -212,7 +212,7 @@ func validMinimum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	eMin := false
        	if item, found := parent.Find("exclusiveMinimum"); found {
 		if !hasMin {
-			OutputError(mem, "exclusiveMinium is present without correspoding minimum")
+			errs.Add(mem, "exclusiveMinium is present without correspoding minimum", JP_ERROR)
 			return false
 		}
 		eMin = item.GetValue().(bool)
@@ -221,44 +221,44 @@ func validMinimum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	if strings.Index(strDocNum, ".") > -1 {
 		fDocNum, dErr := strconv.ParseFloat(strDocNum, 64)
 		if dErr != nil {
-			OutputError(mem, "Invalid number in document " + strDocNum)
+			errs.Add(mem, "Invalid number in document " + strDocNum, JP_ERROR)
 		}
 		fSchemaMin, iErr := strconv.ParseFloat(strSchemaMin, 64)
 		if iErr != nil {
-			OutputError(mem, "Invalid number in schema " + strSchemaMin)
+			errs.Add(mem, "Invalid number in schema " + strSchemaMin, JP_WARNING)
 		}
 
 		if eMin {
 			if fDocNum > fSchemaMin {
 				return true
 			} else {
-				OutputError(mem, "Document number " + strDocNum + " is not greater than minimum " + strSchemaMin)
+				errs.Add(mem, "Document number " + strDocNum + " is not greater than minimum " + strSchemaMin, JP_ERROR)
 			}
 		} else if fDocNum >= fSchemaMin {
 			return true
 		} else {
-			OutputError(mem, "Document number " + strDocNum + " is not greater than or equal to minimum " + strSchemaMin)
+			errs.Add(mem, "Document number " + strDocNum + " is not greater than or equal to minimum " + strSchemaMin, JP_ERROR)
 		}
 	 } else {
 		iDocNum, dErr := strconv.Atoi(strDocNum)
 		if dErr != nil {
-			OutputError(mem, "Invalid number in document " + strDocNum)
+			errs.Add(mem, "Invalid number in document " + strDocNum, JP_ERROR)
 		}
 		iSchemaMin, iErr := strconv.Atoi(strSchemaMin)
 		if iErr != nil {
-			OutputError(mem, "Invalid number in schema " + strSchemaMin)
+			errs.Add(mem, "Invalid number in schema " + strSchemaMin, JP_WARNING)
 		}
 
 		if eMin {
 			if iDocNum > iSchemaMin {
 				return true
 			} else {
-				OutputError(mem, "Document number " + strDocNum + " is not greater than minimum " + strSchemaMin)
+				errs.Add(mem, "Document number " + strDocNum + " is not greater than minimum " + strSchemaMin, JP_ERROR)
 			}
 		} else if iDocNum >= iSchemaMin {
 			return true
 		} else {
-			OutputError(mem, "Document number " + strDocNum + " is not greater than or equal to minimum " + strSchemaMin)
+			errs.Add(mem, "Document number " + strDocNum + " is not greater than or equal to minimum " + strSchemaMin, JP_ERROR)
 		}
 	}
 

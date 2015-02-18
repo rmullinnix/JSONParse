@@ -18,7 +18,7 @@ import (
 // === validates that the type specified in the document is the same as specified in the schema
 //  todo: if number, need to check if integer
 //
-func validType(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validType(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	schemaValue := schema.GetValue().(string)
 	value := valueTypeToString(mem.GetValueType())
 
@@ -27,7 +27,7 @@ func validType(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		return true
 	} else {
 		Trace.Println("  validType() - invalid match on ", schemaValue, " -- was ", value)
-		OutputError(mem, "invalid type: expecting - " + schemaValue + " - found - " + value + " instead")
+		errs.Add(mem, "invalid type: expecting - " + schemaValue + " - found - " + value + " instead", JP_ERROR)
 		return false
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"strconv"
 )
 
+var shareValid	bool
 // 5.4.4.  additionalProperties, properties and patternProperties
 // 
 // 5.4.4.1.  Valid values
@@ -81,12 +82,14 @@ import (
 // 
 // If this keyword is not present, it may be considered present with a value of 0.
 // 
-func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	doc := mem
 
 	if doc.GetState() == NODE_MUTEX {
-		return true
-	} else  {
+		Trace.Println("Properties mutex")
+		return shareValid
+	} else {
+		shareValid = true
 		doc.SetState(NODE_MUTEX)
 	}
 
@@ -114,9 +117,10 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 
 	hasPatterns, patterns := allowPatterns(parent)
  
-	doc.dump()
 	numProps := 0
 	doc.ResetIterate()
+	valid := true
+	totMatch := 0
 	for {
 		var key		string
 		var mem		*JSONNode
@@ -156,8 +160,9 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		}
 
 		if match {
+			totMatch++
 			Trace.Println("  == match successful == ")
-			validMember(key, mem, schemaObj)
+			valid = valid && validMember(key, mem, schemaObj, true)
 		} else if addtlProps != nil {
 			Warning.Println("  --  member: ", key, " not found --") 
 		} else {
@@ -170,14 +175,14 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		strMax := maxProps.GetValue().(string)
 		maxNum, err := strconv.Atoi(strMax)
 		if err != nil {
-			OutputError(mem, "Non integer specefied as maxProperties in schema: " + strMax)
+			errs.Add(mem, "Non integer specefied as maxProperties in schema: " + strMax, JP_ERROR)
 		}
 
 		Trace.Println("    max properties: ", maxNum, " mem count: ", numProps)
 
 		if numProps > maxNum {
-			OutputError(mem, "Maximum <" + strMax + "> of properties exceeded")
-			return false
+			errs.Add(mem, "Maximum <" + strMax + "> of properties exceeded", JP_ERROR)
+			valid = false
 		}
 	}
 
@@ -185,16 +190,23 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		strMin := minProps.GetValue().(string)
 		minNum, err := strconv.Atoi(strMin)
 		if err != nil {
-			OutputError(mem, "Non integer specefied as minProperties in schema: " + strMin)
+			errs.Add(mem, "Non integer specefied as minProperties in schema: " + strMin, JP_ERROR)
 		}
 
 		Trace.Println("    min properties: ", minNum, " mem count: ", numProps)
 
 		if numProps < minNum {
-			OutputError(mem, "Minimum number <" + strMin + "> of properties not supplied")
-			return false
+			errs.Add(mem, "Minimum number <" + strMin + "> of properties not supplied", JP_ERROR)
+			valid = false
 		}
 	}
-	return true
+
+	if totMatch != doc.GetMemberCount() {
+		valid = false
+	}
+
+	shareValid = valid
+
+	return valid
 }
 

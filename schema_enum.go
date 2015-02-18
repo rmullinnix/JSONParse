@@ -17,9 +17,16 @@ import (
 // An instance validates successfully against this keyword if its value is equal to one of the elements in this keyword's array value.
 //
 // === this function implments 5.5.1.2 of the json schema validation spec
-func validEnum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
-	value := mem.GetValue().(string)
+func validEnum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	var bVal		bool
+	var sVal		string
+	if mem.GetValueType() == V_BOOLEAN {
+		bVal = mem.GetValue().(bool)
+	} else {
+		sVal = mem.GetValue().(string)
+	}
 
+	Trace.Println(schema.GetJson())
 	match := false
 	valStr := "["
 	if schema.GetValueType() == V_ARRAY  {
@@ -30,11 +37,18 @@ func validEnum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 				break
 			}
 
-			if value == val.(string)  {
-				match = true
-				break
+			if mem.GetValueType() == V_BOOLEAN {
+				if bVal == val.(bool) {
+					match = true
+					break
+				}
+			} else {
+				if sVal == val.(string)  {
+					match = true
+					break
+				}
+				valStr += val.(string) + ", "
 			}
-			valStr += val.(string) + ", "
 		}
 	}
 
@@ -42,7 +56,7 @@ func validEnum(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	if !match {
 		valStr = strings.TrimSuffix(valStr, ", ")
 		valStr += "]"
-		OutputError(mem, "invalid enum <" + value + "> specified in document. Must be one of " + valStr)
+		errs.Add(mem, "invalid enum <" + sVal + "> specified in document. Must be one of " + valStr, JP_ERROR)
 	}
 
 	return match

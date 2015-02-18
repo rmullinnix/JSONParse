@@ -1,6 +1,7 @@
 package JSONParse
 
 import (
+	"strings"
 )
 
 // NodeState is used to mark each node as not validated, in progress, valid or invald
@@ -25,7 +26,6 @@ const (
 	N_OBJECT=iota
 	N_MEMBER
 	N_ARRAY
-	N_VALUE
 	N_REFERENCE
 )
 
@@ -315,14 +315,107 @@ func (jn *JSONNode) GetNextValue() interface{} {
 	return item.GetValue()
 }
 
+// determine if two nodes are equal
+func (jn *JSONNode) Equal(comp *JSONNode) bool {
+	return false
+}
+
+// return the current node as json (includes children)
+func (jn *JSONNode) GetJson() string {
+	output := ""
+	if jn.nodeType == N_OBJECT {
+		output = "{"
+		output += jn.getKidsJson()
+		output += "}"
+	} else if jn.nodeType == N_ARRAY {
+		output = "["
+		output += jn.getKidsJson()
+		output += "]"
+	} else if jn.nodeType == N_MEMBER {
+		output += `"` + jn.name + `":`
+
+		output += jn.getValueJson()
+	}
+
+	return output
+}
+
+func (jn *JSONNode) getValueJson() string {
+	output := ""
+	if jn.valType == V_OBJECT { 
+		output += jn.getKidsJson()
+	} else if jn.valType == V_ARRAY {
+		output += jn.getValueKidsJson()
+	} else if jn.valType == V_NUMBER {
+		output += " " + jn.value.(string)
+	} else if jn.valType == V_NULL {
+		output += " null"
+	} else if jn.valType == V_BOOLEAN {
+		val := jn.value.(bool)
+		if val {
+			output += " true"
+		} else {
+			output += " false"
+		}
+	} else if jn.valType == V_STRING {
+		output = output + `"` + jn.value.(string) + `"`
+
+	}
+
+	return output
+}
+
+func (jn *JSONNode) getKidsJson() string {
+	output := ""
+	jn.ResetIterate()
+	for {
+		_, item := jn.GetNextMember()
+		if item == nil {
+			break
+		}
+
+		output += item.GetJson()
+		output += ","
+	}
+
+	jn.ResetIterate()
+	for {
+		item := jn.GetNext()
+		if item == nil {
+			break
+		}
+
+		output += item.GetJson()
+		output += ","
+	}
+	output = strings.TrimSuffix(output, ",")
+	return output
+}
+
+func (jn *JSONNode) getValueKidsJson() string {
+	output := ""
+	jn.ResetIterate()
+
+	jn.ResetIterate()
+	for {
+		item := jn.GetNext()
+		if item == nil {
+			break
+		}
+
+		output += item.getValueJson()
+		output += ","
+	}
+	output = strings.TrimSuffix(output, ",")
+	return output
+}
+
 // removes the $ref tag from the list of members and
 // replaces with the members of the referred to json section
 // will link to internal as well as external document sections
 func (jn *JSONNode) CollapseReference(parent *JSONNode) {
 	if jn.valType != V_STRING {
-		jn.dump()
-		Error.Panicln(" invalid ref node type", jn.valType)
-//		return
+		return
 	}
 
 	// traverse nodes until end of reference tags
@@ -340,8 +433,6 @@ func (jn *JSONNode) CollapseReference(parent *JSONNode) {
 	// calling GetNextMember() will chase references until valid object
 	refNode.ResetIterate()
 	for {
-		Trace.Println("  $ref replacement")
-		refNode.dump()
 		if key, item := refNode.GetNextMember(); item == nil {
 			break
 		} else {

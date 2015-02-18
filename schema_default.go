@@ -17,6 +17,6 @@ import (
 //
 // This keyword MAY be used in root schemas, and in any subschemas.
 // 
-func validDefault(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validDefault(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	return true
 }

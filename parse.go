@@ -65,6 +65,7 @@ type JSONParser struct {
 	lines         []lineItem
 	lineCount     int
 	curIndex      int
+	ltrIndex      int
 	variables     map[int]string
 	curTokenType  int
 	curTokenVar   string
@@ -93,6 +94,7 @@ func NewJSONParser(source string, maxError int, level string) *JSONParser {
 	jp.variables = make(map[int]string)
 	jp.curTokenType = -1
 	jp.curIndex = 0
+	jp.ltrIndex = 0
 	jp.lines = make([]lineItem, 1)
 	var newLine		lineItem
 	newLine.indent = 0
@@ -174,7 +176,6 @@ func (jp *JSONParser) tokenize() {
 			break
 		}
 	}
-
 	jp.curIndex = -1
 }
 
@@ -228,7 +229,6 @@ func (jp *JSONParser) parseMember(mem *JSONNode) bool {
 
 	if curTokenType == REF {
 		mem.SetType(V_REFERENCE)
-		Trace.Println("ref ptr")
 		return jp.parseRefPtr(mem)
 	}
 
@@ -249,11 +249,9 @@ func (jp *JSONParser) parseValue(val *JSONNode) bool {
 		return jp.parseObject(obj)
 	} else if jp.curTokenType == BEGIN_ARRAY {
 		val.SetValueType(V_ARRAY)
-//		arr := val.NewArray(jp.curIndex)
 
 		return jp.parseArray(val)
 	} else {
-		//val.SetType(N_VALUE)
 		if jp.curTokenType == J_TRUE {
 			val.SetValueType(V_BOOLEAN)
 			val.SetValue(true)
@@ -297,7 +295,6 @@ func (jp *JSONParser) parseRefPtr(ref *JSONNode) bool {
 
 	// definition of $ref, not actual $ref
 	if jp.curTokenType == BEGIN_OBJECT {
-		Trace.Println("$ref object")
 		ref.SetType(N_OBJECT)
 		ref.SetValueType(V_OBJECT)
 		obj := ref.NewObject(jp.curIndex)
@@ -307,7 +304,6 @@ func (jp *JSONParser) parseRefPtr(ref *JSONNode) bool {
 
 	ref.SetValueType(V_STRING)
 	ref.SetValue(jp.curTokenVar)
-//	ref.NewReference(jp.curTokenVar, jp.curIndex)
 
 	jp.references[jp.curTokenVar] = ref
 
@@ -404,12 +400,12 @@ func (jp *JSONParser) getWord() int {
 
 	// skip white space
 	for {
-		if jp.curIndex >= len(jp.raw)  {
+		if jp.ltrIndex >= len(jp.raw)  {
 			return END_OF_SOURCE
 		}
 
-		letter = jp.raw[jp.curIndex:jp.curIndex+1]
-		jp.curIndex++
+		letter = jp.raw[jp.ltrIndex:jp.ltrIndex+1]
+		jp.ltrIndex++
 
 		if strings.Contains(" \n\t", letter)  {
 			continue
@@ -420,15 +416,15 @@ func (jp *JSONParser) getWord() int {
 
 	jp.curTokenVar = letter
 	if letter == "\"" {
-		if endQuote := strings.Index(jp.raw[jp.curIndex:], "\""); endQuote > 0 {
-			jp.curTokenVar = jp.raw[jp.curIndex : jp.curIndex+endQuote]
-			jp.curIndex += endQuote + 1
+		if endQuote := strings.Index(jp.raw[jp.ltrIndex:], "\""); endQuote > 0 {
+			jp.curTokenVar = jp.raw[jp.ltrIndex : jp.ltrIndex+endQuote]
+			jp.ltrIndex += endQuote + 1
 			if jp.curTokenVar == "$ref" {
 				return REF
 			}
 		} else if endQuote == 0 {
 			jp.curTokenVar = ""
-			jp.curIndex++
+			jp.ltrIndex++
 		} else {
 			jp.curTokenVar = "error"
 			jp.addError("No matching end quote", JP_FATAL)
@@ -463,10 +459,10 @@ func (jp *JSONParser) getWord() int {
 
 	if strings.Contains("-0123456789", letter) {
 		// grab string to next space, check for int or float
-		endWord := strings.IndexAny(jp.raw[jp.curIndex:], " ,:}]\n")
-		jp.curTokenVar = jp.raw[jp.curIndex-1: jp.curIndex + endWord]
+		endWord := strings.IndexAny(jp.raw[jp.ltrIndex:], " ,:}]\n")
+		jp.curTokenVar = jp.raw[jp.ltrIndex-1: jp.ltrIndex + endWord]
 
-		jp.curIndex += endWord
+		jp.ltrIndex += endWord
 		
 		if validNum.MatchString(jp.curTokenVar) {
 			return NUMBER
@@ -478,10 +474,10 @@ func (jp *JSONParser) getWord() int {
 
 	if strings.Contains("tfn", letter) {
 		// potential boolean or null - need to validate
-		endWord := strings.IndexAny(jp.raw[jp.curIndex:], " ,:}]\n")
+		endWord := strings.IndexAny(jp.raw[jp.ltrIndex:], " ,:}]\n")
 		if endWord > 0 {
-			jp.curTokenVar = jp.raw[jp.curIndex - 1 : jp.curIndex + endWord]
-			jp.curIndex += endWord
+			jp.curTokenVar = jp.raw[jp.ltrIndex - 1 : jp.ltrIndex + endWord]
+			jp.ltrIndex += endWord
 
 			if jp.curTokenVar == "true" {
 				return J_TRUE

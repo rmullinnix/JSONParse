@@ -28,7 +28,7 @@ import (
 //     is an array, the instance is valid if its size is less than, or equal to, the
 //     size of "items".
 //
-func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	schema.ResetIterate()
 	items := schema.GetNext() // items is of type object
 	
@@ -43,7 +43,7 @@ func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		}
 
 		Trace.Println("  items: call validMember()")
-		valid := validMember("items", item, items)
+		valid := validMember("items", item, items, false)
 		if !valid {
 			return false
 		}
@@ -52,7 +52,7 @@ func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	return true
 }
 
-func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	Trace.Println("  validAddtionalItems()")
 	if _, found := mem.Find("items"); !found {
 		return true
@@ -73,7 +73,7 @@ func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) boo
 			schemaCount = items.GetMemberCount()
 		}
 	} else {
-		OutputError(mem, "additionItems specified but no items member in schema")
+		errs.Add(mem, "additionalItems specified but no items member in schema", JP_ERROR)
 	}
 
 	memCount := 0
@@ -85,7 +85,7 @@ func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) boo
 			memCount = items.GetMemberCount()
 		}
 	} else {
-		OutputError(mem, "additionItems specified but no items member in document")
+		errs.Add(mem, "additionalItems specified but no items member in document", JP_ERROR)
 	}
 
 	return memCount <= schemaCount
@@ -102,19 +102,19 @@ func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) boo
 // 
 // An array instance is valid against "maxItems" if its size is less than, or equal to, the value of this keyword.
 // 
-func validMaxItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validMaxItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	itemCount := mem.GetCount()
 
 	strMax := schema.GetValue().(string)
 	maxCount, err := strconv.Atoi(strMax)
 	if err != nil {
-		OutputError(mem, "Invalid number for maxItems in Schema <" + strMax + ">")
+		errs.Add(mem, "Invalid number for maxItems in Schema <" + strMax + ">", JP_WARNING)
 	}
 
 	Trace.Println("validMaxItems: max items: ", maxCount, " item count: ", itemCount)
 
 	if itemCount > maxCount {
-		OutputError(mem, "Number of items provided is larger than maxItems <" + strMax + ">")
+		errs.Add(mem, "Number of items provided is larger than maxItems <" + strMax + ">", JP_ERROR)
 		return false
 	}
 
@@ -136,19 +136,19 @@ func validMaxItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 // 
 // If this keyword is not present, it may be considered present with a value of 0.
 // 
-func validMinItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validMinItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	itemCount := mem.GetCount()
 
 	strMin := schema.GetValue().(string)
 	minCount, err := strconv.Atoi(strMin)
 	if err != nil {
-		OutputError(mem, "Invalid number for minItems in Schema <" + strMin + ">")
+		errs.Add(mem, "Invalid number for minItems in Schema <" + strMin + ">", JP_WARNING)
 	}
 
 	Trace.Println("validMinItems: min items: ", minCount, " item count: ", itemCount)
 
 	if itemCount < minCount {
-		OutputError(mem, "Number of items provided is less than minItems <" + strMin + ">")
+		errs.Add(mem, "Number of items provided is less than minItems <" + strMin + ">", JP_ERROR)
 		return false
 	}
 
@@ -170,7 +170,7 @@ func validMinItems(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 // 
 // If not present, this keyword may be considered present with boolean value false.
 //
-func validUnique(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validUnique(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	arr := mem
 
 	duplicate := ""
@@ -202,7 +202,7 @@ func validUnique(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	}
 
 	if len(duplicate) > 0 {
-		OutputError(mem, "Non unique items: document contains duplicate item " + duplicate)
+		errs.Add(mem, "Non unique items: document contains duplicate item " + duplicate, JP_ERROR)
 	}
 
 	return len(duplicate) == 0

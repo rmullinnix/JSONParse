@@ -13,7 +13,7 @@ import (
 // 
 // An object instance is valid against this keyword if its property set contains all elements in this keyword's array value.
 // 
-func validRequired(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validRequired(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	match := true
 	missing := ""
 	arr := schema
@@ -36,7 +36,7 @@ func validRequired(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	}
 
 	if !match {
-		OutputError(mem, "document missing required property " + missing)
+		errs.Add(mem, "document missing required property " + missing, JP_ERROR)
 	}
 
 	return match

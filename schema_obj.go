@@ -9,7 +9,6 @@ func (js *JSONSchema) validObject(doc *JSONNode, schema *JSONNode) bool {
 
 	Trace.Println(" Entering validObject")
 
-	schema.dump()
 	if item, found = schema.Find("properties"); found {
 		item.ResetIterate()
 		item = item.GetNext()
@@ -17,7 +16,8 @@ func (js *JSONSchema) validObject(doc *JSONNode, schema *JSONNode) bool {
 		Error.Panicln("invalid schema: no properties: definition")
 	}
 
-	validMember("root", doc, schema)
+	depth = 0
+	validMember("root", doc, schema, false)
 
 	return true
 }

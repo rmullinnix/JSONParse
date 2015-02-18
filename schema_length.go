@@ -16,7 +16,7 @@ import (
 // 
 // The length of a string instance is defined as the number of its characters as defined by RFC 4627 [RFC4627].
 // 
-func validMaxLength(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validMaxLength(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	if mem.GetValueType() != V_STRING {
 		Trace.Println("maxLength against non-string")
 		return true
@@ -31,12 +31,12 @@ func validMaxLength(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	Trace.Println("  validMaxLength() - compare doc len ", docStr, " to shcema len ", strMax)
 	maxLen, err := strconv.Atoi(strMax)
 	if err != nil {
-		OutputError(mem, "Invalid integer specified in schema: " + strMax)
+		errs.Add(mem, "Invalid integer specified in schema: " + strMax, JP_WARNING)
 		return false
 	}
 
 	if docLen > maxLen {
-		OutputError(mem, "String <" + docStr + "> with length " + strconv.Itoa(docLen) + " is greater than maxLength of " + strMax)
+		errs.Add(mem, "String <" + docStr + "> with length " + strconv.Itoa(docLen) + " is greater than maxLength of " + strMax, JP_ERROR)
 		return false
 	}
 
@@ -55,19 +55,19 @@ func validMaxLength(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 // 
 // The length of a string instance is defined as the number of its characters as defined by RFC 4627 [RFC4627].
 // 
-func validMinLength(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validMinLength(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	docStr := mem.GetValue().(string)
 	strMin := schema.GetValue().(string)
 
 	Trace.Println("  validMaxLength() - compare doc len ", docStr, " to shcema len ", strMin)
 	minLen, err := strconv.Atoi(strMin)
 	if err != nil {
-		OutputError(mem, "Invalid integer specified in schema: " + strMin)
+		errs.Add(mem, "Invalid integer specified in schema: " + strMin, JP_WARNING)
 		return false
 	}
 
 	if len(docStr) < minLen {
-		OutputError(mem, "String <" + docStr + "> is less than minLength of " + strMin)
+		errs.Add(mem, "String <" + docStr + "> is less than minLength of " + strMin, JP_ERROR)
 		return false
 	}
 

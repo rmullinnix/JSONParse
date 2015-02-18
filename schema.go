@@ -3,18 +3,6 @@ package JSONParse
 import (
 )
 
-// primitive types - valid in value ("type": <value>)
-// not currently being used
-const (
-	S_ARRAY=iota
-	S_BOOLEAN
-	S_INTEGER
-	S_NUMBER
-	S_OBJECT
-	S_NULL
-	S_STRING
-)
-
 type JSONSchema struct {
 	schema		*JSONParser
 	doc		*JSONParser
@@ -23,11 +11,12 @@ type JSONSchema struct {
 // validate function signature used to add keyword validators
 // as keywords are encountered, the validator function is called
 // to validate the document section based on the keyword
-type validator func(*JSONNode, *JSONNode, *JSONNode) bool
+type validator func(*JSONNode, *JSONNode, *JSONNode, *SchemaErrors) bool
 
 // a list of keywords and associated validators
 //   todo:  add func AddKeywordValidator
 var keywords		map[string]validator
+var schemaErrors	*SchemaErrors
 
 
 //  == from the json schema core spec ==
@@ -40,6 +29,8 @@ var keywords		map[string]validator
 // use it validate a json document agains that schema
 func NewJSONSchema(source string, level string) *JSONSchema {
 	js := new(JSONSchema)
+
+	schemaErrors = NewSchemaErrors()
 
 	keywords = make(map[string]validator)
 
@@ -89,5 +80,7 @@ func (js *JSONSchema) ValidateDocument(source string) (bool, []ParseError) {
 	Trace.Println("Validate Document: ", source)
 
 	result := js.validObject(jp.jsonDoc, js.schema.jsonDoc)
+
+	schemaErrors.Output()
 	return result, errors
 }

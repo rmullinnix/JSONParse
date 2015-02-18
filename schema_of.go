@@ -15,7 +15,7 @@ import (
 // 
 // An instance validates successfully against this keyword if it validates successfully against all schemas defined by this keyword's value.
 //
-func validAllOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validAllOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	Trace.Println("  allOf()")
 	
 	mem.SetState(NODE_SEMAPHORE)
@@ -30,7 +30,7 @@ func validAllOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 		}
 
 		item = item.GetValue().(*JSONNode)
-		valid = validMember("allOf", mem, item)
+		valid = validMember("allOf", mem, item, false)
 
 		Trace.Println("   allOf valid", valid)
 		if !valid {
@@ -40,7 +40,7 @@ func validAllOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 
 	if !valid {
 		mem.SetState(INVALID)
-		OutputError(mem, "Did not match all the allOf constraints")
+		errs.Add(mem, "Did not match all the allOf constraints", JP_ERROR)
 	} else {
 		mem.SetState(VALID)
 	}
@@ -60,22 +60,26 @@ func validAllOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 // 
 // An instance validates successfully against this keyword if it validates successfully against at least one schema defined by this keyword's value.
 // 
-func validAnyOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validAnyOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	Trace.Println("  anyOf()")
 	
 	mem.SetState(NODE_SEMAPHORE)
 
-	node := schema.GetValue().(*JSONNode)
 	valid := false
-	node.ResetIterate()
+	schema.ResetIterate()
 	for {
-		item := node.GetNext()
+		item := schema.GetNext()
 		if item == nil {
 			break
 		}
 
-		item = item.GetValue().(*JSONNode)
-		valid = validMember("anyOf", mem, item)
+		of := item
+		if of.GetValueType () == V_OBJECT {
+			of.ResetIterate()
+			of = of.GetNext()
+		}
+
+		valid = validMember("anyOf", mem, of, true)
 
 		Trace.Println("   anyOf valid", valid)
 		if valid {
@@ -98,12 +102,11 @@ func validAnyOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 //
 // An instance validates successfully against this keyword if it validates successfully against exactly one schema defined by this keyword's value.
 //
-func validOneOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
+func validOneOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	Trace.Println("  oneOf()")
 
 	mem.SetState(NODE_SEMAPHORE)
 
-//	node := schema.GetValue().(*JSONNode)
 	match := 0
 	schema.ResetIterate()
 	for {
@@ -112,11 +115,22 @@ func validOneOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 			break
 		}
 
-//		item = item.GetValue().(*JSONNode)
+		of := item
+		if of.GetValueType () == V_OBJECT {
+			of.ResetIterate()
+			of = of.GetNext()
+		}
 
-		valid := validMember("oneOf", mem, item)
+		var name	string
+		ref, found := of.namedKids["$ref"]
+		if found {
+			name = ref.GetValue().(string)
+		}
 
-		Trace.Println("   oneOf valid", valid)
+		valid := validMember("oneOf", mem, of, true)
+
+		Warning.Println("   oneOf ", name, "valid", valid)
+
 		if valid {
 			match++
 		}
@@ -128,9 +142,9 @@ func validOneOf(mem *JSONNode, schema *JSONNode, parent *JSONNode) bool {
 	} else {
 		mem.SetState(INVALID)
 		if match > 1 {
-			OutputError(mem, "Matched more than one in a oneOf section")
+			errs.Add(mem, "Matched more than one in a oneOf section", JP_ERROR)
 		} else {
-			OutputError(mem, "Failed to match one in a oneOf section")
+			errs.Add(mem, "Failed to match one in a oneOf section", JP_ERROR)
 		}
 		return false
 	}
