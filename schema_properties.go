@@ -98,6 +98,10 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 		doc = doc.GetNext()
 	}
 
+	if doc == nil {
+		return true
+	}
+
 	var item	*JSONNode
 	found := false
 
@@ -107,11 +111,13 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 	}
 
 	var addtlProps		*JSONNode
-	allowAddtl := false
+	var foundAddtl		bool
+	allowAddtl := true	// allowed by default
 
-	if addtlProps, allowAddtl = parent.Find("additionalProperties"); allowAddtl {
+	if addtlProps, foundAddtl = parent.Find("additionalProperties"); foundAddtl {
 		if addtlProps.GetValueType() == V_BOOLEAN {
 			allowAddtl = addtlProps.GetValue().(bool)
+			addtlProps = nil
 		}
 	}
 
@@ -149,23 +155,29 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 				if match = regPattern.MatchString(key); match {
 					node.ResetIterate()
 					schemaObj = node.GetNext()
-					break;
+					valid = valid && validMember(key, mem, schemaObj, false)
+					//break;
 				}
 			}
+			schemaObj = nil
 		}
 
-		if !match && allowAddtl {
-			schemaObj = addtlProps
+		if !match && addtlProps != nil {
+			addtlProps.ResetIterate()
+			schemaObj = addtlProps.GetNext()
 			match = true
 		}
 
 		if match {
 			totMatch++
 			Trace.Println("  == match successful == ")
-			valid = valid && validMember(key, mem, schemaObj, false)
-		} else if addtlProps != nil {
+			if schemaObj != nil {
+				valid = valid && validMember(key, mem, schemaObj, false)
+			}
+		} else if !allowAddtl {
 			Warning.Println("  --  member: ", key, " not found --") 
 		} else {
+			totMatch++
 			Trace.Println("  ++ match by addtionalProperties ++")
 		}
 			
@@ -202,6 +214,7 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 	}
 
 	if totMatch != doc.GetMemberCount() {
+		Trace.Println("did not match all properties", totMatch, numProps, doc.GetMemberCount())
 		valid = false
 	}
 

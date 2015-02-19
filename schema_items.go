@@ -30,20 +30,46 @@ import (
 //
 func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	schema.ResetIterate()
-	items := schema.GetNext() // items is of type object
+//	items := schema.GetNext() // items is of type object
 	
 	arrNode := mem
 
 	Trace.Println("  vaildItems()")
+
+	// ignore non-arrays
+	if mem.GetValueType() != V_ARRAY {
+		return true 
+	}
+
+	iterateItems := false
+	if schema.GetValueType() == V_ARRAY {
+		if schema.GetCount() != 1 {
+			if schema.GetCount() != arrNode.GetCount() {
+				Trace.Println("  items count does not match member count")
+				return false
+			}
+			iterateItems = true
+		}
+	} else {
+		schema = schema.GetNext()
+	}
+
 	arrNode.ResetIterate()
+	schem_item := schema
 	for {
 		item := arrNode.GetNext()
 		if item == nil {
 			break
 		}
 
+		if iterateItems {
+			schem_item = schema.GetNext()
+			schem_item.ResetIterate()
+			schem_item = schem_item.GetNext()
+		}
+
 		Trace.Println("  items: call validMember()")
-		valid := validMember("items", item, items, false)
+		valid := validMember("items", item, schem_item, false)
 		if !valid {
 			return false
 		}
@@ -54,41 +80,64 @@ func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 
 func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	Trace.Println("  validAddtionalItems()")
-	if _, found := mem.Find("items"); !found {
-		return true
-	}
+//	if _, found := mem.Find("items"); !found {
+//		return true
+//	}
 
-	addtlItems := schema.GetValue().(bool)
-	if addtlItems {
-		return true
-	}
+	if schema.GetValueType() == V_OBJECT {
+		schema.ResetIterate()
+		schema_itm := schema.GetNext()
 
-	// no idea if this is the  proper validation
-	items, found := parent.Find("items")
-	schemaCount := 0
-	if found {
-		if items.GetType() == N_ARRAY {
-			schemaCount = items.GetCount()
-		} else if items.GetType() == N_OBJECT {
-			schemaCount = items.GetMemberCount()
+		mem.ResetIterate()
+		valid := true
+		for {
+			mem_itm := mem.GetNext()
+			if mem_itm == nil {
+				break
+			}
+
+			if mem_itm.GetValueType() != V_NULL {
+				valid = valid && validMember("additionalItems", mem_itm, schema_itm, false)
+			}
 		}
-	} else {
-		errs.Add(mem, "additionalItems specified but no items member in schema", JP_ERROR)
-	}
 
-	memCount := 0
-	items, found = mem.Find("items")
-	if found {
-		if items.GetType() == N_ARRAY {
-			memCount = items.GetCount()
-		} else if items.GetType() == N_OBJECT {
-			memCount = items.GetMemberCount()
+		return valid
+
+	} else if schema.GetValueType() == V_BOOLEAN {
+		if addtlItems := schema.GetValue().(bool); addtlItems {
+			return true
 		}
-	} else {
-		errs.Add(mem, "additionalItems specified but no items member in document", JP_ERROR)
-	}
 
-	return memCount <= schemaCount
+		// no idea if this is the  proper validation
+		items, found := parent.Find("items")
+		schemaCount := 0
+		if found {
+			if items.GetValueType() == V_ARRAY {
+				schemaCount = items.GetCount()
+			} else if items.GetValueType() == V_OBJECT {
+				return true
+			}
+		} else {
+			errs.Add(mem, "additionalItems specified but no items member in schema", JP_ERROR)
+		}
+
+		memCount := 0
+		if found {
+			if mem.GetValueType() == V_ARRAY {
+				memCount = mem.GetCount()
+			} else if items.GetType() == N_OBJECT {
+				memCount = mem.GetMemberCount()
+			}
+		} else {
+			errs.Add(mem, "additionalItems specified but no items member in document", JP_ERROR)
+		}
+
+		Trace.Println("memCount", memCount, "schemaCount", schemaCount)
+		return memCount <= schemaCount
+	} else {
+		Trace.Println("Unforeseen additionalItems type", schema.GetValueType())
+		return false
+	}
 }
 
 

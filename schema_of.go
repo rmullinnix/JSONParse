@@ -28,13 +28,12 @@ func validAllOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 			break
 		}
 
-		of := item
-		if of.GetValueType () == V_OBJECT {
-			of.ResetIterate()
-			of = of.GetNext()
+		if item.GetValueType () == V_OBJECT {
+			item.ResetIterate()
+			item = item.GetNext()
 		}
 
-		valid = validMember("allOf", of, mem, false)
+		valid = validMember("allOf", mem, item, false)
 
 		Trace.Println("   allOf valid", valid)
 		if !valid {

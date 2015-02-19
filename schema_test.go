@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 )
 
 var globalTestScope *testing.T
@@ -43,6 +44,11 @@ func TestInit(t *testing.T) {
 	keywords["default"] = validDefault
 }
 
+// Still to add
+// - default
+// - definitions
+// - dependencies
+// - not
 func TestAdditionalItems(t *testing.T) {
 	genTestFile("additionalItems")
 	executeTests("additionalItems", t)
@@ -68,16 +74,6 @@ func TestEnum(t *testing.T) {
 	executeTests("enum", t)
 }
 
-func TestMaxLength(t *testing.T) {
-	genTestFile("maxLength")
-	executeTests("maxLength", t)
-}
-
-func TestMinLength(t *testing.T) {
-	genTestFile("minLength")
-	executeTests("minLength", t)
-}
-
 func TestItems(t *testing.T) {
 	genTestFile("items")
 	executeTests("items", t)
@@ -88,9 +84,84 @@ func TestMaxItems(t *testing.T) {
 	executeTests("maxItems", t)
 }
 
+func TestMaxLength(t *testing.T) {
+	genTestFile("maxLength")
+	executeTests("maxLength", t)
+}
+
+func TestMaxProperties(t *testing.T) {
+	genTestFile("maxProperties")
+	executeTests("maxProperties", t)
+}
+
+func TestMaximum(t *testing.T) {
+	genTestFile("maximum")
+	executeTests("maximum", t)
+}
+
 func TestMinItems(t *testing.T) {
 	genTestFile("minItems")
 	executeTests("minItems", t)
+}
+
+func TestMinLength(t *testing.T) {
+	genTestFile("minLength")
+	executeTests("minLength", t)
+}
+
+func TestMinProperties(t *testing.T) {
+	genTestFile("minProperties")
+	executeTests("minProperties", t)
+}
+
+func TestMinimum(t *testing.T) {
+	genTestFile("minimum")
+	executeTests("minimum", t)
+}
+
+func TestMultipleOf(t *testing.T) {
+	genTestFile("multipleOf")
+	executeTests("multipleOf", t)
+}
+
+func TestOneOf(t *testing.T) {
+	genTestFile("oneOf")
+	executeTests("oneOf", t)
+}
+
+func TestPattern(t *testing.T) {
+	genTestFile("pattern")
+	executeTests("pattern", t)
+}
+
+func TestPatternProperties(t *testing.T) {
+	genTestFile("patternProperties")
+	executeTests("patternProperties", t)
+}
+
+func TestRef(t *testing.T) {
+	genTestFile("ref")
+	executeTests("ref", t)
+}
+
+//func TestRemoteRef(t *testing.T) {
+//	genTestFile("refRemote")
+//	executeTests("refRemote", t)
+//}
+
+func TestRequired(t *testing.T) {
+	genTestFile("required")
+	executeTests("required", t)
+}
+
+func TestType(t *testing.T) {
+	genTestFile("type")
+	executeTests("type", t)
+}
+
+func TestUniqueItems(t *testing.T) {
+	genTestFile("uniqueItems")
+	executeTests("uniqueItems", t)
 }
 
 func genTestFile(name string) {
@@ -102,7 +173,7 @@ func genTestFile(name string) {
 }
 
 func executeTests(name string, t *testing.T) {
-	jp := NewJSONParser("tests/" + name + ".json", 5, "error")
+	jp := NewJSONParser("tests/" + name + ".json", 5, "trace")
 
 	jp.Parse()
 
@@ -110,6 +181,7 @@ func executeTests(name string, t *testing.T) {
 
 	testcases, _ := tree.Find("testcases")
 	testcases.ResetIterate()
+	test_major := 1
 	for {
 		testcase := testcases.GetNext()
 		if testcase == nil {
@@ -132,6 +204,7 @@ func executeTests(name string, t *testing.T) {
 				tests.ResetIterate()
 				test := tests.GetNext()
 
+				test_minor := 1
 				for {
 					if test == nil {
 						break
@@ -146,16 +219,19 @@ func executeTests(name string, t *testing.T) {
 					exp_item, _ := tmp.Find("valid")
 					exp_result := exp_item.GetValue().(bool)
 					
-					fmt.Println("data: ", tst_item.GetJson())
-					fmt.Println("Test Result: ", valid)
+					test_num := strconv.Itoa(test_major) + "." + strconv.Itoa(test_minor)
+					fmt.Println(test_num, "data: ", tst_item.GetJson())
+					fmt.Println(test_num, "result:", valid, "vs expected:", exp_result)
 
 					if valid != exp_result {
 						t.Fail()
-						t.Log("Test failed:  expecting", exp_result, "received", valid)
+						t.Log(name, test_num, "failed:  expecting", exp_result, "received", valid)
 					}
 					test = tests.GetNext()
+					test_minor++
 				}
 			}
 		}
+		test_major++
 	}
 }

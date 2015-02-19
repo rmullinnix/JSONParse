@@ -48,6 +48,10 @@ func allowPatterns(mem *JSONNode) (bool, map[string]*JSONNode) {
 func validPattern(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	Trace.Println("  validPattern()")
 
+	if mem.GetValueType() != V_STRING {
+		return true
+	}
+
 	value := schema
 	pattern := value.GetValue().(string)
 

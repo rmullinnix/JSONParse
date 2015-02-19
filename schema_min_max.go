@@ -1,7 +1,6 @@
 package JSONParse
 
 import (
-	"math"
 	"strings"
 	"strconv"
 )
@@ -19,22 +18,48 @@ import (
 // division of the instance by this keyword's value is an integer.
 //
 func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	if mem.GetValueType() != V_NUMBER {
+		return true
+	}
+
 	strDocNum := mem.GetValue().(string)
 	strSchemaNum := schema.GetValue().(string)
 
-	if strings.Index(strDocNum, ".") > -1 {
+	if strings.Index(strDocNum, ".") > -1 || strings.Index(strSchemaNum, ".") > -1 {
 		Trace.Println("  validMutlipleOf() - with float")
-		fDocNum, dErr := strconv.ParseFloat(strDocNum, 64)
+		_, dErr := strconv.ParseFloat(strDocNum, 64)
 		if dErr != nil {
 			errs.Add(mem, "Invalid number in document " + strDocNum, JP_ERROR)
 		}
-		fSchemaNum, iErr := strconv.ParseFloat(strSchemaNum, 64)
+		_, iErr := strconv.ParseFloat(strSchemaNum, 64)
 		if iErr != nil {
 			errs.Add(mem, "Invalid number in schema " + strSchemaNum, JP_WARNING)
 		}
 
-		rem := math.Remainder(fDocNum, fSchemaNum)
+		docLen := len(strDocNum) - strings.Index(strDocNum, ".")
+		schemaLen := len(strSchemaNum) - strings.Index(strSchemaNum, ".")
+
+		var newDocNum		string
+		var newSchemaNum	string
+
+		if schemaLen > docLen {
+			newDocNum = strings.Replace(strDocNum, ".", "", 1) + strings.Repeat("0", schemaLen-docLen)
+			newSchemaNum = strings.Replace(strDocNum, ".", "", 1)
+		} else {
+			newDocNum = strings.Replace(strDocNum, ".", "", 1)
+			newSchemaNum = strings.Replace(strDocNum, ".", "", 1) + strings.Repeat("0", docLen-schemaLen)
+		}
+
+		iDocNum, _ := strconv.Atoi(newDocNum)
+		iSchemaNum, _ := strconv.Atoi(newSchemaNum)
+
+		if iDocNum == 0 {
+			return true
+		}
+
+		rem := iDocNum % iSchemaNum
 		if rem != 0 {
+			Trace.Println("Number", strDocNum, "is not multipleOf", strSchemaNum, rem)
 			errs.Add(mem, "Number " + strDocNum + " is not multipleOf " + strSchemaNum, JP_ERROR)
 			return false
 		}
@@ -47,6 +72,10 @@ func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 		iSchemaNum, iErr := strconv.Atoi(strSchemaNum)
 		if iErr != nil {
 			errs.Add(mem, "Invalid number in schema " + strSchemaNum, JP_WARNING)
+		}
+
+		if iDocNum == 0 {
+			return true
 		}
 
 		rem := iDocNum % iSchemaNum
@@ -161,7 +190,7 @@ func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schem
 		}
 	}
 
-	return true
+	return false
 }
 
 // 5.1.3.  minimum and exclusiveMinimum
@@ -262,5 +291,5 @@ func validMinimum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schem
 		}
 	}
 
-	return true
+	return false
 }

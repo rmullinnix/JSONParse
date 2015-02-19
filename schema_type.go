@@ -1,6 +1,7 @@
 package JSONParse
 
 import (
+	"strings"
 )
 
 // 5.5.2.  type
@@ -22,10 +23,21 @@ func validType(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaEr
 	schemaValue := schema.GetValue().(string)
 	value := valueTypeToString(mem.GetValueType())
 
+	if schemaValue == "integer" && value == "number" {
+		strVal := mem.GetValue().(string)
+		if strings.Index(strVal, ".") == -1 {
+			value = "integer"
+		}
+	}
+
 	if value == schemaValue {
 		Trace.Println("  validType() - match on ", value)
 		return true
 	} else {
+//		if value == "null" {
+//			Trace.Println("  validType() - match on ", value)
+//			return true
+//		}
 		Trace.Println("  validType() - invalid match on ", schemaValue, " -- was ", value)
 		errs.Add(mem, "invalid type: expecting - " + schemaValue + " - found - " + value + " instead", JP_ERROR)
 		return false
