@@ -131,7 +131,7 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 		var key		string
 		var mem		*JSONNode
 
-		if key, mem = doc.GetNextMember(); mem == nil {
+		if key, mem = doc.GetNextMember(true); mem == nil {
 			Trace.Println("  validProperties() end of members")
 			break;
 		}
@@ -155,8 +155,8 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 				if match = regPattern.MatchString(key); match {
 					node.ResetIterate()
 					schemaObj = node.GetNext()
-					valid = valid && validMember(key, mem, schemaObj, false)
-					//break;
+					nextValid := validMember(key, mem, schemaObj)
+					valid = valid && nextValid
 				}
 			}
 			schemaObj = nil
@@ -172,7 +172,9 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 			totMatch++
 			Trace.Println("  == match successful == ")
 			if schemaObj != nil {
-				valid = valid && validMember(key, mem, schemaObj, false)
+				Trace.Println(" call validMember")
+				nextValid := validMember(key, mem, schemaObj)
+				valid = valid && nextValid
 			}
 		} else if !allowAddtl {
 			Warning.Println("  --  member: ", key, " not found --") 

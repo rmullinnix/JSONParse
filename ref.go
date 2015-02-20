@@ -14,12 +14,13 @@ func (jp *JSONParser) resolveReferences() {
 		if ref == nil {
 			jp.addError("Unable to resolve reference " + key, JP_FATAL)
 			OutputError(jp.references[key], "Invalid json reference " + key)
+			jp.references[key] = nil
 		} else {
 			jp.references[key] = ref
 		}
 	}
-	Trace.Println("== REFERENCE TABLE ==")
-	Trace.Println(jp.references)
+	//Trace.Println("== REFERENCE TABLE ==")
+	//Trace.Println(jp.references)
 }
 
 // find associated reference either in the current document or an

@@ -18,10 +18,11 @@ func allowPatterns(mem *JSONNode) (bool, map[string]*JSONNode) {
 	item.ResetIterate()
 	item = item.GetNext()
 	patterns = make(map[string]*JSONNode)
+
 	item.ResetIterate()
 
 	for {
-		key, item := item.GetNextMember()
+		key, item := item.GetNextMember(true)
 		if item == nil {
 			break
 		}

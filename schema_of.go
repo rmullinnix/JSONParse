@@ -33,7 +33,7 @@ func validAllOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 			item = item.GetNext()
 		}
 
-		valid = validMember("allOf", mem, item, false)
+		valid = validMember("allOf", mem, item)
 
 		Trace.Println("   allOf valid", valid)
 		if !valid {
@@ -82,7 +82,18 @@ func validAnyOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 			of = of.GetNext()
 		}
 
-		valid = validMember("anyOf", mem, of, true)
+		inSuppression := false
+		if suppress  {
+			inSuppression = true	
+		} else {
+			suppress = true
+		}
+
+		valid = validMember("anyOf", mem, of)
+
+		if !inSuppression {
+			suppress = false
+		}
 
 		Trace.Println("   anyOf valid", valid)
 		if valid {
@@ -110,6 +121,7 @@ func validOneOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 
 	mem.SetState(NODE_SEMAPHORE)
 
+	Trace.Println("   oneOf", depth)
 	match := 0
 	schema.ResetIterate()
 	for {
@@ -130,9 +142,20 @@ func validOneOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 			name = ref.GetValue().(string)
 		}
 
-		valid := validMember("oneOf", mem, of, true)
+		inSuppression := false
+		if suppress  {
+			inSuppression = true	
+		} else {
+			suppress = true
+		}
 
-		Warning.Println("   oneOf ", name, "valid", valid)
+		valid := validMember("oneOf", mem, of)
+
+		if !inSuppression {
+			suppress = false
+		}
+
+		Warning.Println("   oneOf", depth, name, "valid", valid, "match", match)
 
 		if valid {
 			match++
@@ -140,13 +163,16 @@ func validOneOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 	}
 
 	if match == 1 {
+		Warning.Println("  oneOf", depth, "matched one in oneOf")
 		mem.SetState(VALID)
 		return true
 	} else {
 		mem.SetState(INVALID)
 		if match > 1 {
+			Warning.Println("  oneOf", depth, "matched more than one in oneOf")
 			errs.Add(mem, "Matched more than one in a oneOf section", JP_ERROR)
 		} else {
+			Warning.Println("  oneOf", depth, "failed to match one in oneOf")
 			errs.Add(mem, "Failed to match one in a oneOf section", JP_ERROR)
 		}
 		return false

@@ -76,6 +76,7 @@ type JSONParser struct {
 	source        string
 	raw           string
 	tokens	      []int
+	resolveRef    bool
 	references    map[string]*JSONNode
 	jsonDoc	      *JSONNode
 	extDocs	      map[string]*JSONNode
@@ -101,6 +102,7 @@ func NewJSONParser(source string, maxError int, level string) *JSONParser {
 	jp.lines[0] = newLine
 	jp.jsonDoc = NewJSONTree(jp)
 	jp.tokens = make([]int, 0)
+	jp.resolveRef = true
 	jp.references = make(map[string]*JSONNode)
 	jp.extDocs = make(map[string]*JSONNode)
 
@@ -148,7 +150,9 @@ func (jp *JSONParser) Parse() (bool, []ParseError) {
 		return false, jp.errorList
 	}
 
-	jp.resolveReferences()
+	if jp.resolveRef {
+		jp.resolveReferences()
+	}
 
 	return true, jp.errorList
 }
@@ -156,6 +160,10 @@ func (jp *JSONParser) Parse() (bool, []ParseError) {
 // returns a pointer to the json document
 func (jp *JSONParser) GetDoc() *JSONNode {
 	return jp.jsonDoc
+}
+
+func (jp *JSONParser) ResolveRefs(val bool) {
+	jp.resolveRef = val
 }
 
 // converts the json stream into constants representing items
@@ -230,7 +238,7 @@ func (jp *JSONParser) parseMember(mem *JSONNode) bool {
 	}
 
 	if curTokenType == REF {
-		mem.SetType(V_REFERENCE)
+		mem.SetValueType(V_REFERENCE)
 		return jp.parseRefPtr(mem)
 	}
 

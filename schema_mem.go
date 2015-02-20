@@ -5,13 +5,14 @@ import (
 
 var depth int
 
-func validMember(name string, mem *JSONNode, schemaMem *JSONNode, suppress bool) bool {
+func validMember(name string, mem *JSONNode, schemaMem *JSONNode) bool {
+	depth++
+	Trace.Println("  validMember()", depth, name)
 	nodeState := mem.GetState()
 //	if !(nodeState == VIRGIN || nodeState == NODE_SEMAPHORE) {
 //		return nodeState == VALID
 //	}
 		
-	depth++
 	mem.SetState(VALIDATE_IN_PROGRESS)
 	if mem.GetType() == N_MEMBER {
 		name = mem.name
@@ -22,19 +23,25 @@ func validMember(name string, mem *JSONNode, schemaMem *JSONNode, suppress bool)
 //	if schemaMem.GetType() == N_OBJECT || schemaMem.GetType() == N_MEMBER {
 		schemaMem.ResetIterate()
 		for {
-			key, item := schemaMem.GetNextMember()
+	
+			key, item := schemaMem.GetNextMember(true)
 			if item == nil {
-				break;
+				Trace.Println("  end of schema section")
+				break
 			}
+			Trace.Println("  validMember()", depth, "  key:", key)
 
 			item.SetState(VALIDATE_IN_PROGRESS)
 			if validator, found := keywords[key]; found {
-				Trace.Println("  validMember()", depth, " ", name, " against schema mem ", key)
+				Trace.Println("  validMember()", depth, "   ", name, "against schema mem", key)
 				if suppress {
 					errs := NewSchemaErrors()
-					valid = valid && validator(mem, item, schemaMem, errs)
+					nextValid := validator(mem, item, schemaMem, errs)
+					valid = valid && nextValid
+					Trace.Println("  validMember()", depth, valid, nextValid)
 				} else {
-					valid = valid && validator(mem, item, schemaMem, schemaErrors)
+					nextValid := validator(mem, item, schemaMem, schemaErrors)
+					valid = valid && nextValid
 				}
 			}
 		}

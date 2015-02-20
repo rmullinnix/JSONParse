@@ -1,6 +1,7 @@
 package JSONParse
 
 import (
+	"regexp"
 )
 
 type JSONSchema struct {
@@ -17,7 +18,13 @@ type validator func(*JSONNode, *JSONNode, *JSONNode, *SchemaErrors) bool
 //   todo:  add func AddKeywordValidator
 var keywords		map[string]validator
 var schemaErrors	*SchemaErrors
+var validateFormat	bool
+var suppress		bool  // suppress errors
 
+// regexp for format keyword
+var regexHostname	*regexp.Regexp
+var regexDateTime	*regexp.Regexp
+var regexEmail		*regexp.Regexp
 
 //  == from the json schema core spec ==
 // A JSON Schema is a JSON document, and that document MUST be an object. 
@@ -59,6 +66,19 @@ func NewJSONSchema(source string, level string) *JSONSchema {
 	keywords["oneOf"] = validOneOf
 	keywords["multipleOf"] = validMultipleOf
 	keywords["default"] = validDefault
+	keywords["not"] = validNot
+	keywords["format"] = validFormat
+
+	regexHostname = regexp.MustCompile(`^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)` +
+					`*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`)
+	regexDateTime = regexp.MustCompile(`^([0-9]{4})-([0-9]{2})-([0-9]{2})` +
+					`([Tt]([0-9]{2}):([0-9]{2}):([0-9]{2})(\.[0-9]+)?)?` +
+					`([Tt]([0-9]{2}):([0-9]{2}):([0-9]{2})(\\.[0-9]+)?)?` +
+					`(([Zz]|([+-])([0-9]{2}):([0-9]{2})))?`)
+	regexEmail = regexp.MustCompile(`^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$`)
+
+	validateFormat = true
+	suppress = false
 
 	js.schema = NewJSONParser(source, 1, level)
 
@@ -82,4 +102,8 @@ func (js *JSONSchema) ValidateDocument(source string) (bool, *SchemaErrors) {
 
 	schemaErrors.Output()
 	return result, schemaErrors
+}
+
+func (js *JSONSchema) DisableFormat() {
+	validateFormat = false
 }

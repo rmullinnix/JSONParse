@@ -20,28 +20,45 @@ import (
 //  todo: if number, need to check if integer
 //
 func validType(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
-	schemaValue := schema.GetValue().(string)
-	value := valueTypeToString(mem.GetValueType())
+	valid := false
 
-	if schemaValue == "integer" && value == "number" {
+	value := valueTypeToString(mem.GetValueType())
+	schemaValue := ""
+	if schema.GetValueType() == V_STRING {
+		schemaValue = schema.GetValue().(string)
+		valid = checkType(mem, value, schemaValue)
+	} else if schema.GetValueType() == V_ARRAY {
+		schema.ResetIterate()
+		for {
+			schema_itm := schema.GetNext()
+			if schema_itm == nil {
+				break
+			}
+			schemaValue = schema_itm.GetValue().(string)
+	
+			if valid = checkType(mem, value, schemaValue); valid {
+				break
+			}
+		}
+	}
+	if valid {
+		Trace.Println("  validType() - match on ", value)
+	} else {
+		Trace.Println("  validType() - invalid match on ", schemaValue, " -- was ", value)
+		errs.Add(mem, "invalid type: expecting - " + schemaValue + " - found - " + value + " instead", JP_ERROR)
+	}
+	return valid
+}
+
+func checkType(mem *JSONNode, value string, schema_val string) bool {
+	if schema_val == "integer" && value == "number" {
 		strVal := mem.GetValue().(string)
 		if strings.Index(strVal, ".") == -1 {
 			value = "integer"
 		}
 	}
 
-	if value == schemaValue {
-		Trace.Println("  validType() - match on ", value)
-		return true
-	} else {
-//		if value == "null" {
-//			Trace.Println("  validType() - match on ", value)
-//			return true
-//		}
-		Trace.Println("  validType() - invalid match on ", schemaValue, " -- was ", value)
-		errs.Add(mem, "invalid type: expecting - " + schemaValue + " - found - " + value + " instead", JP_ERROR)
-		return false
-	}
+	return value == schema_val
 }
 
 func valueTypeToString(valType ValueType) string {

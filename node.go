@@ -253,7 +253,7 @@ func (jn *JSONNode) ResetIterate() {
 // returns the member key (name) and the node
 // a valid of nil for the node indicates the end of the list
 // json references are resolved and become permanent members of the list
-func (jn *JSONNode) GetNextMember() (string, *JSONNode) {
+func (jn *JSONNode) GetNextMember(chaseRef bool) (string, *JSONNode) {
 	if jn.curIndex >= len(jn.nameArray) {
 		return "", nil
 	}
@@ -265,10 +265,18 @@ func (jn *JSONNode) GetNextMember() (string, *JSONNode) {
 		var hasRef	bool
 
 		if first, hasRef = jn.namedKids["$ref"]; hasRef {
-			if first.nodeType == V_OBJECT  {
+			Trace.Println(" chase ref: ")
+			if first.nodeType == N_OBJECT  {
 				hasRef = false
-			} else if first.nodeType == V_REFERENCE {
-				first.CollapseReference(jn)
+			} else if first.nodeType == N_REFERENCE {
+				Trace.Println("val reference")
+				if chaseRef {
+					Trace.Println("collapse")
+					first.CollapseReference(jn)
+				} else {
+					hasRef = false
+				}
+				
 			} else {
 				hasRef = false
 			}
@@ -335,6 +343,12 @@ func (jn *JSONNode) GetJson() string {
 		output += `"` + jn.name + `":`
 
 		output += jn.GetValueJson()
+	} else if jn.nodeType == N_REFERENCE {
+		output += `"$ref":`
+		output += jn.GetValueJson()
+	} else {
+		Trace.Println("unknown type")
+		jn.dump()
 	}
 
 	return output
@@ -343,7 +357,11 @@ func (jn *JSONNode) GetJson() string {
 func (jn *JSONNode) GetValueJson() string {
 	output := ""
 	if jn.valType == V_OBJECT { 
-		output += jn.getKidsJson()
+		if jn.nodeType != N_OBJECT {
+			output += `{` + jn.getKidsJson() + `}`
+		} else {
+			output += jn.getKidsJson()
+		}
 	} else if jn.valType == V_ARRAY {
 		output += "[" + jn.getValueKidsJson() +"]"
 	} else if jn.valType == V_NUMBER {
@@ -360,6 +378,9 @@ func (jn *JSONNode) GetValueJson() string {
 	} else if jn.valType == V_STRING {
 		output = output + `"` + jn.value.(string) + `"`
 
+	} else {
+		Trace.Println("unknown type")
+		jn.dump()
 	}
 
 	return output
@@ -369,7 +390,7 @@ func (jn *JSONNode) getKidsJson() string {
 	output := ""
 	jn.ResetIterate()
 	for {
-		_, item := jn.GetNextMember()
+		_, item := jn.GetNextMember(false)
 		if item == nil {
 			break
 		}
@@ -385,7 +406,7 @@ func (jn *JSONNode) getKidsJson() string {
 			break
 		}
 
-		output += item.GetJson()
+		output += item.GetValueJson()
 		output += ","
 	}
 	output = strings.TrimSuffix(output, ",")
@@ -432,7 +453,7 @@ func (jn *JSONNode) CollapseReference(parent *JSONNode) {
 	// calling GetNextMember() will chase references until valid object
 	refNode.ResetIterate()
 	for {
-		if key, item := refNode.GetNextMember(); item == nil {
+		if key, item := refNode.GetNextMember(true); item == nil {
 			break
 		} else {
 			parent.namedKids[key] = item

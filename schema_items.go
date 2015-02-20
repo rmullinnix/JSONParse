@@ -2,6 +2,7 @@ package JSONParse
 
 import (
 	"strconv"
+//	"strings"
 )
 
 // 5.3.1.  additionalItems and items
@@ -29,9 +30,6 @@ import (
 //     size of "items".
 //
 func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
-	schema.ResetIterate()
-//	items := schema.GetNext() // items is of type object
-	
 	arrNode := mem
 
 	Trace.Println("  vaildItems()")
@@ -51,6 +49,7 @@ func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 			iterateItems = true
 		}
 	} else {
+		schema.ResetIterate()
 		schema = schema.GetNext()
 	}
 
@@ -69,7 +68,7 @@ func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 		}
 
 		Trace.Println("  items: call validMember()")
-		valid := validMember("items", item, schem_item, false)
+		valid := validMember("items", item, schem_item)
 		if !valid {
 			return false
 		}
@@ -97,7 +96,8 @@ func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, err
 			}
 
 			if mem_itm.GetValueType() != V_NULL {
-				valid = valid && validMember("additionalItems", mem_itm, schema_itm, false)
+				nextValid := validMember("additionalItems", mem_itm, schema_itm)
+				valid = valid && nextValid
 			}
 		}
 
@@ -238,6 +238,7 @@ func validUnique(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schema
 		return true
 	}
 
+	arr.ResetIterate()
 	dups := make(map[string]int)
 	for {
 		val := arr.GetNext()
@@ -246,12 +247,21 @@ func validUnique(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schema
 		}
 		token := ""
 
-		if val.GetValueType() == V_OBJECT {
+		if val.GetValueType() == V_OBJECT || val.GetValueType() == V_ARRAY {
 			token = tokenizeObject(val)
 		} else if val.GetValueType() == V_STRING {
 			token = val.GetValue().(string)
+		} else if val.GetValueType() == V_NUMBER {
+			token = val.GetValue().(string)
+			fVal, _ := strconv.ParseFloat(token, 64)
+			token = strconv.FormatFloat(fVal, 'e', 6, 64)
+		} else if val.GetValueType() == V_BOOLEAN {
+			token = strconv.FormatBool(val.GetValue().(bool))
+		} else if val.GetValueType() == V_NULL {
+			token = "null"
 		}
 
+		Trace.Println("token", token)
 		if _, found := dups[token]; found {
 			duplicate = token
 			break
@@ -260,6 +270,7 @@ func validUnique(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schema
 		}
 	}
 
+Trace.Println(dups)
 	if len(duplicate) > 0 {
 		errs.Add(mem, "Non unique items: document contains duplicate item " + duplicate, JP_ERROR)
 	}
@@ -271,14 +282,5 @@ func validUnique(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schema
 // arrays of objects with nested objects will break this
 //  todo: determine better way to perform object comparison
 func tokenizeObject(obj *JSONNode) string {
-	token := ""
-	for {
-		key, item := obj.GetNextMember()
-		if item == nil {
-			break
-		}
-
-		token += key + item.GetValue().(string)
-	}
-	return token
+	return obj.GetJson()
 }
