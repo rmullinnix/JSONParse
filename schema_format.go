@@ -66,7 +66,27 @@ func validEmail(value string) bool {
 }
 
 func validHostname(value string) bool {
-	return regexHostname.MatchString(value)
+	valid := regexHostname.MatchString(value)
+
+	if !valid {
+		return false
+	}
+
+	parts := strings.Split(value, ".")
+	for comp := range parts {
+		if len(parts[comp]) > 63 {
+			return false
+		}
+	}
+
+	parts = strings.Split(value, "-")
+	for comp := range parts {
+		if len(parts[comp]) > 63 {
+			return false
+		}
+	}
+
+	return len(value) < 254
 }
 
 func validIPV4(value string) bool {

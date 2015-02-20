@@ -27,7 +27,7 @@ func validMaxLength(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sch
 	docStr := mem.GetValue().(string)
 	if count := strings.Count(docStr, "\\u"); count > 0 {
 		// need to figure out how to encode
-		docLen = len(docStr)
+		docLen = unicodeLen(docStr)
 	} else {
 		docLen = len(docStr)
 	}
@@ -67,17 +67,25 @@ func validMinLength(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sch
 		return true
 	}
 
+	docLen := 0
 	docStr := mem.GetValue().(string)
+	if count := strings.Count(docStr, "\\u"); count > 0 {
+		// need to figure out how to encode
+		docLen = unicodeLen(docStr)
+	} else {
+		docLen = len(docStr)
+	}
+
 	strMin := schema.GetValue().(string)
 
-	Trace.Println("  validMaxLength() - compare doc len ", docStr, " to shcema len ", strMin)
+	Trace.Println("  validMinLength() - compare doc len ", docStr, " to shcema len ", strMin)
 	minLen, err := strconv.Atoi(strMin)
 	if err != nil {
 		errs.Add(mem, "Invalid integer specified in schema: " + strMin, JP_WARNING)
 		return false
 	}
 
-	if len(docStr) < minLen {
+	if docLen < minLen {
 		errs.Add(mem, "String <" + docStr + "> is less than minLength of " + strMin, JP_ERROR)
 		return false
 	}

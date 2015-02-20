@@ -46,6 +46,7 @@ func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 				Trace.Println("  items count does not match member count")
 				return false
 			}
+			schema.ResetIterate()
 			iterateItems = true
 		}
 	} else {
@@ -62,9 +63,12 @@ func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 		}
 
 		if iterateItems {
+			schema.dump()
 			schem_item = schema.GetNext()
+			schem_item.dump()
 			schem_item.ResetIterate()
 			schem_item = schem_item.GetNext()
+			schem_item.dump()
 		}
 
 		Trace.Println("  items: call validMember()")
