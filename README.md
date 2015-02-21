@@ -37,4 +37,4 @@ jp-schema -file http://petstore.swagger.io/v2/swagger.json -schema http://swagge
 ```
 The informational messages at the end of hte second are issues encountered while processing "oneOf" logic which do not affect the validity of the document.  Still working on error output.
 
-Known issues - the (*JSONNode).GetJson() can cause a recursive loop if the json has a $ref back to itself.  This is still in development, so there are other issues in there as well. 
+Known issues - the (*JSONNode).GetJson() can cause a recursive loop if the json has a $ref back to itself.  The implementation is still in development, so there are other issues in there as well. 
