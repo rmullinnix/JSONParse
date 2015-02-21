@@ -60,14 +60,14 @@ func OutputError(node *JSONNode, errMsg string, level int) {
 		tokenEnd = tokenIndex + 15
 	}
 
-	output := parser.prettyTokens(tokenStart, tokenEnd)
 
 	if level == JP_ERROR || level == JP_FATAL {
+		output := parser.prettyTokens(tokenStart, tokenEnd)
 		Error.Println(errMsg + "\n" + output)
 	} else if level == JP_WARNING {
-		Warning.Println(errMsg + "\n" + output)
+		Warning.Println(errMsg)
 	} else if level == JP_INFO {
-		Info.Println(errMsg + "\n" + output)
+		Info.Println(errMsg)
 	}
 }
 

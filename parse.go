@@ -430,19 +430,28 @@ func (jp *JSONParser) getWord() int {
 
 	jp.curTokenVar = letter
 	if letter == "\"" {
-		if endQuote := strings.Index(jp.raw[jp.ltrIndex:], "\""); endQuote > 0 {
-			jp.curTokenVar = jp.raw[jp.ltrIndex : jp.ltrIndex+endQuote]
-			jp.ltrIndex += endQuote + 1
-			if jp.curTokenVar == "$ref" {
-				return REF
+		endQuote := 0
+		foundEnd := false
+		for i := jp.ltrIndex; i < len(jp.raw); i++ {
+			letter = jp.raw[i:i+1]
+			// skip escpaped characters
+			if letter == `\` {
+				i++
+			} else if letter == "\"" {
+				endQuote = i
+				foundEnd = true
+				break
 			}
-		} else if endQuote == 0 {
-			jp.curTokenVar = ""
-			jp.ltrIndex++
-		} else {
+		}
+
+		jp.curTokenVar = jp.raw[jp.ltrIndex : endQuote]
+		jp.ltrIndex = endQuote + 1
+		if jp.curTokenVar == "$ref" {
+			return REF
+		} else if !foundEnd {
 			jp.curTokenVar = "error"
 			jp.addError("No matching end quote", JP_FATAL)
-			return STRING
+			return END_OF_SOURCE
 		}
 		return STRING
 	}
