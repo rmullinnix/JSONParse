@@ -208,7 +208,7 @@ func genTestFile(name string) {
 }
 
 func executeTests(name string, t *testing.T) {
-	jp := NewJSONParser("tests/" + name + ".json", 5, "trace")
+	jp := NewJSONParser("tests/" + name + ".json", 5, "error")
 
 	jp.Parse()
 
@@ -241,6 +241,8 @@ func executeTests(name string, t *testing.T) {
 
 				test_minor := 1
 				for {
+					Mutex = NewSchemaMutex()
+
 					if test == nil {
 						break
 					}
@@ -249,7 +251,7 @@ func executeTests(name string, t *testing.T) {
 					tmp := test.GetNext()
 					tst_item, _ := tmp.Find("data")
 
-					valid := validMember(name, tst_item, schema_itm)
+					valid := validMember("*", name, tst_item, schema_itm)
 
 					exp_item, _ := tmp.Find("valid")
 					exp_result := exp_item.GetValue().(bool)
@@ -273,11 +275,13 @@ func executeTests(name string, t *testing.T) {
 
 func chunkSchema(name string, t *testing.T) {
 
-	jp := NewJSONParser("tests/" + name + ".json", 5, "trace")
+	jp := NewJSONParser("tests/" + name + ".json", 5, "error")
 
 	jp.ResolveRefs(false)
 
 	jp.Parse()
+
+	Mutex = NewSchemaMutex()
 
 	tree := jp.GetDoc()
 
@@ -305,7 +309,7 @@ func chunkSchema(name string, t *testing.T) {
 
 		delete(item.namedKids, "schema")
 
-		jp1 := NewJSONParser(sfn, 5, "trace")
+		jp1 := NewJSONParser(sfn, 5, "error")
 		jp1.Parse()
 		schema_itm := jp1.GetDoc()
 
@@ -320,11 +324,13 @@ func chunkSchema(name string, t *testing.T) {
 					break
 				}
 
+				Mutex = NewSchemaMutex()
+
 				test.ResetIterate()
 				tmp := test.GetNext()
 				tst_item, _ := tmp.Find("data")
 
-				valid := validMember(name, tst_item, schema_itm)
+				valid := validMember("*", name, tst_item, schema_itm)
 
 				exp_item, _ := tmp.Find("valid")
 				exp_result := exp_item.GetValue().(bool)

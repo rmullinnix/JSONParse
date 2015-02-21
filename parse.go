@@ -42,7 +42,8 @@ const (
 )
 
 const (
-	JP_WARNING = iota
+	JP_INFO = iota
+	JP_WARNING
 	JP_ERROR
 	JP_FATAL
 )
@@ -247,7 +248,7 @@ func (jp *JSONParser) parseMember(mem *JSONNode) bool {
 
 // value = false / null / true / object / array / number / string
 func (jp *JSONParser) parseValue(val *JSONNode) bool {
-	err := jp.expectToken(J_TRUE | J_FALSE | J_NULL | BEGIN_OBJECT | BEGIN_ARRAY | NUMBER | STRING)
+	err := jp.expectToken(J_TRUE | J_FALSE | J_NULL | BEGIN_OBJECT | BEGIN_ARRAY | NUMBER | STRING | REF)
 	if err != nil {
 		return false
 	}
@@ -278,6 +279,9 @@ func (jp *JSONParser) parseValue(val *JSONNode) bool {
 		} else if jp.curTokenType == STRING {
 			val.SetValueType(V_STRING)
 			val.SetValue(jp.curTokenVar)
+		} else if jp.curTokenType == REF {
+			val.SetValueType(V_STRING)
+			val.SetValue("$ref")
 		}
 	}
 

@@ -17,8 +17,8 @@ import (
 // An instance validates successfully against this keyword if its value is equal to one of the elements in this keyword's array value.
 //
 // === this function implments 5.5.1.2 of the json schema validation spec
-func validEnum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
-
+func validEnum(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validEnum")
 	val := mem.GetValueJson()
 
 	Trace.Println(schema.GetJson())
@@ -48,6 +48,8 @@ func validEnum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaEr
 		valStr += "]"
 		errs.Add(mem, "invalid enum <" + val + "> specified in document. Must be one of " + valStr, JP_ERROR)
 	}
+
+	Trace.Println(stack_id, "validEnum", match)
 
 	return match
 }

@@ -1,60 +1,55 @@
 package JSONParse
 
 import (
+	"strconv"
 )
 
 var depth int
 
-func validMember(name string, mem *JSONNode, schemaMem *JSONNode) bool {
+func validMember(stack_id string, name string, mem *JSONNode, schemaMem *JSONNode) bool {
 	depth++
-	Trace.Println("  validMember()", depth, name)
-	nodeState := mem.GetState()
-//	if !(nodeState == VIRGIN || nodeState == NODE_SEMAPHORE) {
-//		return nodeState == VALID
-//	}
+	Trace.Println(stack_id, "validMember -- depth", depth, "-- name <", name, ">")
 		
-	mem.SetState(VALIDATE_IN_PROGRESS)
 	if mem.GetType() == N_MEMBER {
 		name = mem.name
 	}
 
 	valid := true
 
-//	if schemaMem.GetType() == N_OBJECT || schemaMem.GetType() == N_MEMBER {
-		schemaMem.ResetIterate()
-		for {
+	schemaMem.ResetIterate()
+	index := 1
+	for {
 	
-			key, item := schemaMem.GetNextMember(true)
-			if item == nil {
-				Trace.Println("  end of schema section")
-				break
-			}
-			Trace.Println("  validMember()", depth, "  key:", key)
+		key, item := schemaMem.GetNextMember(true)
+		if item == nil {
+			break
+		}
+		Trace.Println(stack_id, "validMember == key: <" + key + ">")
 
-			item.SetState(VALIDATE_IN_PROGRESS)
-			if validator, found := keywords[key]; found {
-				Trace.Println("  validMember()", depth, "   ", name, "against schema mem", key)
-				if suppress {
-					errs := NewSchemaErrors()
-					nextValid := validator(mem, item, schemaMem, errs)
-					valid = valid && nextValid
-					Trace.Println("  validMember()", depth, valid, nextValid)
-				} else {
-					nextValid := validator(mem, item, schemaMem, schemaErrors)
-					valid = valid && nextValid
+		if validator, found := keywords[key]; found {
+			Trace.Println(stack_id, "validMember", name, "against schema mem", key)
+			new_stack_id := stack_id + "." + strconv.Itoa(index)
+			index++
+			if suppress {
+				errs := NewSchemaErrors()
+				nextValid := validator(new_stack_id, mem, item, schemaMem, errs)
+				valid = valid && nextValid
+
+				if !nextValid {
+					for i := range errs.errorList {
+						errs.errorList[i].level = JP_INFO
+						schemaErrors.errorList = append(schemaErrors.errorList, errs.errorList[i])
+					}
 				}
+			} else {
+				nextValid := validator(new_stack_id, mem, item, schemaMem, schemaErrors)
+				valid = valid && nextValid
 			}
 		}
-//	}
-
-	depth--
-	if valid {
-		if nodeState != NODE_SEMAPHORE {
-			mem.SetState(VALID)
-		}
-	} else {
-		mem.SetState(INVALID)
 	}
 
+	depth--
+
+	Trace.Println(stack_id, "validMember", valid)
 	return valid
 }

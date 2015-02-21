@@ -12,7 +12,7 @@ type JSONSchema struct {
 // validate function signature used to add keyword validators
 // as keywords are encountered, the validator function is called
 // to validate the document section based on the keyword
-type validator func(*JSONNode, *JSONNode, *JSONNode, *SchemaErrors) bool
+type validator func(string, *JSONNode, *JSONNode, *JSONNode, *SchemaErrors) bool
 
 // a list of keywords and associated validators
 //   todo:  add func AddKeywordValidator
@@ -20,6 +20,7 @@ var keywords		map[string]validator
 var schemaErrors	*SchemaErrors
 var validateFormat	bool
 var suppress		bool  // suppress errors
+var Mutex		*SchemaMutex
 
 // regexp for format keyword
 var regexHostname	*regexp.Regexp
@@ -38,6 +39,8 @@ func NewJSONSchema(source string, level string) *JSONSchema {
 	js := new(JSONSchema)
 
 	schemaErrors = NewSchemaErrors()
+
+	Mutex = NewSchemaMutex()
 
 	keywords = make(map[string]validator)
 

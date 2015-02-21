@@ -18,11 +18,12 @@ import (
 // parties, schema authors SHALL NOT expect a peer implementation to support this
 // keyword and/or custom format attributes.
 //
-func validFormat(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validFormat(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	if !validateFormat {
 		return true
 	}
 
+	Trace.Println(stack_id, "validFormat")
 	valid := false
 
 	if schema.GetValueType() == V_STRING {
@@ -44,6 +45,7 @@ func validFormat(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schema
 			valid = validURI(memValue)
 		}
 	}
+	Trace.Println(stack_id, "validFormat", valid)
 	return valid
 }
 // 7.3.1.  date-time

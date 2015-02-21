@@ -29,10 +29,10 @@ import (
 //     is an array, the instance is valid if its size is less than, or equal to, the
 //     size of "items".
 //
-func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validItems(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
 	arrNode := mem
 
-	Trace.Println("  vaildItems()")
+	Trace.Println(stack_id, "vaildItems")
 
 	// ignore non-arrays
 	if mem.GetValueType() != V_ARRAY {
@@ -44,6 +44,7 @@ func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 		if schema.GetCount() != 1 {
 			if schema.GetCount() != arrNode.GetCount() {
 				Trace.Println("  items count does not match member count")
+				Trace.Println(stack_id, "vaildItems", false)
 				return false
 			}
 			schema.ResetIterate()
@@ -56,6 +57,7 @@ func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 
 	arrNode.ResetIterate()
 	schem_item := schema
+	index := 1
 	for {
 		item := arrNode.GetNext()
 		if item == nil {
@@ -63,26 +65,27 @@ func validItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaE
 		}
 
 		if iterateItems {
-			schema.dump()
 			schem_item = schema.GetNext()
-			schem_item.dump()
 			schem_item.ResetIterate()
 			schem_item = schem_item.GetNext()
-			schem_item.dump()
 		}
 
-		Trace.Println("  items: call validMember()")
-		valid := validMember("items", item, schem_item)
+		new_stack_id := stack_id + "." + strconv.Itoa(index)
+		index++
+		valid := validMember(new_stack_id, "items", item, schem_item)
+
 		if !valid {
+			Trace.Println(stack_id, "vaildItems", false)
 			return false
 		}
 	}
 	
+	Trace.Println(stack_id, "vaildItems", true)
 	return true
 }
 
-func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
-	Trace.Println("  validAddtionalItems()")
+func validAdditionalItems(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validAddtionalItems")
 //	if _, found := mem.Find("items"); !found {
 //		return true
 //	}
@@ -93,6 +96,7 @@ func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, err
 
 		mem.ResetIterate()
 		valid := true
+		index := 1
 		for {
 			mem_itm := mem.GetNext()
 			if mem_itm == nil {
@@ -100,15 +104,19 @@ func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, err
 			}
 
 			if mem_itm.GetValueType() != V_NULL {
-				nextValid := validMember("additionalItems", mem_itm, schema_itm)
+				new_stack_id := stack_id + "." + strconv.Itoa(index)
+				index++
+				nextValid := validMember(new_stack_id, "additionalItems", mem_itm, schema_itm)
 				valid = valid && nextValid
 			}
 		}
 
+		Trace.Println(stack_id, "validAddtionalItems", valid)
 		return valid
 
 	} else if schema.GetValueType() == V_BOOLEAN {
 		if addtlItems := schema.GetValue().(bool); addtlItems {
+			Trace.Println(stack_id, "validAddtionalItems", true)
 			return true
 		}
 
@@ -119,6 +127,7 @@ func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, err
 			if items.GetValueType() == V_ARRAY {
 				schemaCount = items.GetCount()
 			} else if items.GetValueType() == V_OBJECT {
+				Trace.Println(stack_id, "validAddtionalItems", true)
 				return true
 			}
 		} else {
@@ -137,9 +146,11 @@ func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, err
 		}
 
 		Trace.Println("memCount", memCount, "schemaCount", schemaCount)
+		Trace.Println(stack_id, "validAddtionalItems", memCount <= schemaCount)
 		return memCount <= schemaCount
 	} else {
 		Trace.Println("Unforeseen additionalItems type", schema.GetValueType())
+		Trace.Println(stack_id, "validAddtionalItems", false)
 		return false
 	}
 }
@@ -155,9 +166,11 @@ func validAdditionalItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, err
 // 
 // An array instance is valid against "maxItems" if its size is less than, or equal to, the value of this keyword.
 // 
-func validMaxItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validMaxItems(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validMaxItems")
 	if mem.GetValueType() != V_ARRAY {
 		Trace.Println("minItems() - items is not an array")
+		Trace.Println(stack_id, "validMaxItems", true)
 		return true
 	}
 
@@ -173,9 +186,11 @@ func validMaxItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sche
 
 	if itemCount > maxCount {
 		errs.Add(mem, "Number of items provided is larger than maxItems <" + strMax + ">", JP_ERROR)
+		Trace.Println(stack_id, "validMaxItems", false)
 		return false
 	}
 
+	Trace.Println(stack_id, "validMaxItems", true)
 	return true
 }
 
@@ -194,9 +209,11 @@ func validMaxItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sche
 // 
 // If this keyword is not present, it may be considered present with a value of 0.
 // 
-func validMinItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validMinItems(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validMinItems")
 	if mem.GetValueType() != V_ARRAY {
 		Trace.Println("minItems() - items is not an array")
+		Trace.Println(stack_id, "validMinItems", true)
 		return true
 	}
 
@@ -212,9 +229,11 @@ func validMinItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sche
 
 	if itemCount < minCount {
 		errs.Add(mem, "Number of items provided is less than minItems <" + strMin + ">", JP_ERROR)
+		Trace.Println(stack_id, "validMinItems", false)
 		return false
 	}
 
+	Trace.Println(stack_id, "validMinItems", true)
 	return true
 }
 
@@ -233,12 +252,14 @@ func validMinItems(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sche
 // 
 // If not present, this keyword may be considered present with boolean value false.
 //
-func validUnique(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validUnique(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validUnique")
 	arr := mem
 
 	duplicate := ""
 	unique := schema.GetValue().(bool)
 	if unique == false {
+		Trace.Println(stack_id, "validUnique", true)
 		return true
 	}
 
@@ -265,7 +286,6 @@ func validUnique(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schema
 			token = "null"
 		}
 
-		Trace.Println("token", token)
 		if _, found := dups[token]; found {
 			duplicate = token
 			break
@@ -274,11 +294,11 @@ func validUnique(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schema
 		}
 	}
 
-Trace.Println(dups)
 	if len(duplicate) > 0 {
 		errs.Add(mem, "Non unique items: document contains duplicate item " + duplicate, JP_ERROR)
 	}
 
+	Trace.Println(stack_id, "validUnique", len(duplicate) == 0)
 	return len(duplicate) == 0
 }
 

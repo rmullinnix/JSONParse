@@ -31,6 +31,6 @@ func (se *SchemaErrors) Add(node *JSONNode, message string, level int) {
 
 func (se *SchemaErrors) Output() {
 	for i := 0; i < len(se.errorList); i++ {
-		OutputError(se.errorList[i].node, se.errorList[i].message)
+		OutputError(se.errorList[i].node, se.errorList[i].message, se.errorList[i].level)
 	}
 }

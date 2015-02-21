@@ -1,5 +1,5 @@
 package JSONParse
 
-func validNumber(number string, mem *JSONNode) bool {
+func validNumber(stack_id string, number string, mem *JSONNode) bool {
 	return true
 }

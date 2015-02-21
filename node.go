@@ -4,22 +4,7 @@ import (
 	"strings"
 )
 
-// NodeState is used to mark each node as not validated, in progress, valid or invald
-// this is used to prevent validating the node more than once as json documents can
-// refer to the same section multiple times
-// It is also used to lock an object if multiple validators work need to work in concert
-// to validate the node (e.g., properties, patternProperties, additionalProperties
-type NodeState int
-
-// Valid states for NodeState
-const (
-	VIRGIN=iota
-	VALIDATE_IN_PROGRESS
-	VALID
-	INVALID
-	NODE_MUTEX
-	NODE_SEMAPHORE
-)
+type NodeType int
 
 // valid NodeType
 const (
@@ -41,7 +26,6 @@ const (
 	V_NULL
 )
 
-type NodeType		int
 type ValueType		int
 
 // Node for each item in the json tree
@@ -50,7 +34,6 @@ type JSONNode struct {
 	parent		*JSONNode
 	doc		*JSONParser
 	value		interface{}
-	state		NodeState
 	nodeType	NodeType
 	valType		ValueType
 	name		string
@@ -71,7 +54,6 @@ func NewJSONTree(doc *JSONParser) *JSONNode {
 	jn.root = jn
 	jn.parent  = nil
 	jn.nodeType = N_OBJECT
-	jn.state = VIRGIN
 	jn.name = "root"
 
 	jn.unnamedKids = make([]*JSONNode, 0)
@@ -88,7 +70,6 @@ func (jn *JSONNode) newNode(v_indx int) *JSONNode {
 	node.parent = jn
 	node.root = jn.root
 	node.tokenIndex = v_indx
-	node.state = VIRGIN
 
 	node.unnamedKids = make([]*JSONNode, 0)
 	node.namedKids = make(map[string]*JSONNode)
@@ -209,16 +190,6 @@ func (jn *JSONNode) GetValueType() ValueType {
 	return jn.valType
 }
 
-// get the current state of the node - used during validation
-func (jn *JSONNode) GetState() NodeState {
-	return jn.state
-}
-
-// get the current state of the node - used during validation
-func (jn *JSONNode) SetState(state NodeState) {
-	jn.state = state
-}
-
 // find a named member in the current node
 // returns a pointer to the node if found, and nil if not found
 // If json references exist in the list of members, they are resolved
@@ -265,13 +236,10 @@ func (jn *JSONNode) GetNextMember(chaseRef bool) (string, *JSONNode) {
 		var hasRef	bool
 
 		if first, hasRef = jn.namedKids["$ref"]; hasRef {
-			Trace.Println(" chase ref: ")
 			if first.nodeType == N_OBJECT  {
 				hasRef = false
 			} else if first.nodeType == N_REFERENCE {
-				Trace.Println("val reference")
 				if chaseRef {
-					Trace.Println("collapse")
 					first.CollapseReference(jn)
 				} else {
 					hasRef = false
@@ -468,7 +436,6 @@ func (jn *JSONNode) followReference(references map[string]*JSONNode) *JSONNode {
 //	ptr := jn.GetValue().(*JSONNode)
 
 	ref := jn.GetValue().(string)
-	Trace.Println("  followReference() ", ref)
 	if len(ref) > 0 {
 		if ptrValue, found := references[jn.GetValue().(string)]; found {
 			jn.SetValue(ptrValue)

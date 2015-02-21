@@ -3,6 +3,7 @@ package JSONParse
 import (
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 var shareValid	bool
@@ -82,15 +83,15 @@ var shareValid	bool
 // 
 // If this keyword is not present, it may be considered present with a value of 0.
 // 
-func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validProperties(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validProperties")
 	doc := mem
 
-	if doc.GetState() == NODE_MUTEX {
-		Trace.Println("Properties mutex")
-		return shareValid
+	if val, found := Mutex.Find(stack_id[:strings.LastIndex(stack_id, ".")] + "properties"); found {
+		Trace.Println(stack_id, "validProperties -- mutex --", val)
+		return val
 	} else {
-		shareValid = true
-		doc.SetState(NODE_MUTEX)
+		Mutex.Add(stack_id[:strings.LastIndex(stack_id, ".")] + "properties")
 	}
 
 	if doc.GetType() == N_MEMBER || doc.GetType() == N_ARRAY {
@@ -99,6 +100,7 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 	}
 
 	if doc == nil {
+		Trace.Println(stack_id, "validProperties", true)
 		return true
 	}
 
@@ -127,6 +129,7 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 	doc.ResetIterate()
 	valid := true
 	totMatch := 0
+	index := 1
 	for {
 		var key		string
 		var mem		*JSONNode
@@ -136,7 +139,7 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 			break;
 		}
 
-		Trace.Println("      Match ", key)
+		Trace.Println("     == Match ==", key)
 		numProps++
 		var schemaObj	*JSONNode
 		match := false
@@ -155,7 +158,11 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 				if match = regPattern.MatchString(key); match {
 					node.ResetIterate()
 					schemaObj = node.GetNext()
-					nextValid := validMember(key, mem, schemaObj)
+
+					new_stack_id := stack_id + "." + strconv.Itoa(index)
+					index++
+					nextValid := validMember(new_stack_id, key, mem, schemaObj)
+
 					valid = valid && nextValid
 				}
 			}
@@ -170,14 +177,15 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 
 		if match {
 			totMatch++
-			Trace.Println("  == match successful == ")
 			if schemaObj != nil {
-				Trace.Println(" call validMember")
-				nextValid := validMember(key, mem, schemaObj)
+				new_stack_id := stack_id + "." + strconv.Itoa(index)
+				index++
+				nextValid := validMember(new_stack_id, key, mem, schemaObj)
+
 				valid = valid && nextValid
 			}
 		} else if !allowAddtl {
-			Warning.Println("  --  member: ", key, " not found --") 
+			Trace.Println("  --  member: ", key, " not found --") 
 		} else {
 			totMatch++
 			Trace.Println("  ++ match by addtionalProperties ++")
@@ -220,8 +228,9 @@ func validProperties(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 		valid = false
 	}
 
-	shareValid = valid
+	Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "properties", valid)
 
+	Trace.Println(stack_id, "validProperties", valid)
 	return valid
 }
 

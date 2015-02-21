@@ -46,10 +46,11 @@ func allowPatterns(mem *JSONNode) (bool, map[string]*JSONNode) {
 // A string instance is considered valid if the regular expression matches the
 // instance successfully. Recall: regular expressions are not implicitly anchored.
 //
-func validPattern(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
-	Trace.Println("  validPattern()")
+func validPattern(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validPattern")
 
 	if mem.GetValueType() != V_STRING {
+		Trace.Println(stack_id, "validPattern", true)
 		return true
 	}
 
@@ -62,10 +63,13 @@ func validPattern(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schem
 	patternReg := regexp.MustCompile(pattern)
 	if match := patternReg.MatchString(key); match {
 		Trace.Println("    match pattern <" + pattern + "> against " + key + " - true")
+		Trace.Println(stack_id, "validPattern", true)
 		return true
 	}
 
 	Trace.Println("    match pattern <" + pattern + "> against " + key + " - false")
+
+	Trace.Println(stack_id, "validPattern", false)
 	return false
 }
 

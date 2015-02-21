@@ -17,8 +17,10 @@ import (
 // A numeric instance is valid against "multipleOf" if the result of the 
 // division of the instance by this keyword's value is an integer.
 //
-func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validMultipleOf(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validMultipleOf")
 	if mem.GetValueType() != V_NUMBER {
+		Trace.Println(stack_id, "validMultipleOf", true)
 		return true
 	}
 
@@ -54,6 +56,7 @@ func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 		iSchemaNum, _ := strconv.Atoi(newSchemaNum)
 
 		if iDocNum == 0 {
+			Trace.Println(stack_id, "validMultipleOf", true)
 			return true
 		}
 
@@ -61,6 +64,7 @@ func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 		if rem != 0 {
 			Trace.Println("Number", strDocNum, "is not multipleOf", strSchemaNum, rem)
 			errs.Add(mem, "Number " + strDocNum + " is not multipleOf " + strSchemaNum, JP_ERROR)
+			Trace.Println(stack_id, "validMultipleOf", false)
 			return false
 		}
 	 } else {
@@ -75,6 +79,7 @@ func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 		}
 
 		if iDocNum == 0 {
+			Trace.Println(stack_id, "validMultipleOf", true)
 			return true
 		}
 
@@ -82,10 +87,12 @@ func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 
 		if rem != 0 {
 			errs.Add(mem, "Number " + strDocNum + " is not multipleOf " + strSchemaNum, JP_ERROR)
+			Trace.Println(stack_id, "validMultipleOf", false)
 			return false
 		}
 	}
 
+	Trace.Println(stack_id, "validMultipleOf", true)
 	return true
 }
 
@@ -113,18 +120,24 @@ func validMultipleOf(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sc
 // "exclusiveMaximum", if absent, may be considered as being present with 
 // boolean value false.
 //
-func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validMaximum(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validMaximum")
+
+	if val, found := Mutex.Find(stack_id[:strings.LastIndex(stack_id, ".")] + "maximum"); found {
+		Trace.Println(stack_id, "validProperties -- mutex --", val)
+		return val
+	} else {
+		Mutex.Add(stack_id[:strings.LastIndex(stack_id, ".")] + "maximum")
+	}
+
 	doc := mem
 	if doc.GetValueType() != V_NUMBER {
 		Warning.Println("valid max against non number")
-		return true
-	}
+		Trace.Println(stack_id, "validMaximum", true)
 
-	Trace.Println("  validMaximum()")
-	if doc.GetState() == NODE_MUTEX {
+		Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "maximum", true)
+
 		return true
-	} else  {
-		doc.SetState(NODE_MUTEX)
 	}
 
 	strDocNum := mem.GetValue().(string)
@@ -141,6 +154,8 @@ func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schem
        	if item, found := parent.Find("exclusiveMaximum"); found {
 		if !hasMax {
 			errs.Add(mem, "exclusiveMaximum is present without correspoding maximum", JP_ERROR)
+			Trace.Println(stack_id, "validMaximum", false)
+			Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "maximum", false)
 			return false
 		}
 		eMax = item.GetValue().(bool)
@@ -163,6 +178,8 @@ func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schem
 				errs.Add(mem, "Document number " + strDocNum + " is not less than maximum " + strSchemaMax, JP_ERROR)
 			}
 		} else if fDocNum <= fSchemaMax {
+			Trace.Println(stack_id, "validMaximum", true)
+			Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "maximum", true)
 			return true
 		} else {
 			errs.Add(mem, "Document number " + strDocNum + " is not less than or equal to maximum " + strSchemaMax, JP_ERROR)
@@ -179,17 +196,24 @@ func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schem
 
 		if eMax {
 			if iDocNum < iSchemaMax {
+				Trace.Println(stack_id, "validMaximum", true)
+				Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "maximum", true)
 				return true
 			} else {
 				errs.Add(mem, "Document number " + strDocNum + " is not less than maximum " + strSchemaMax, JP_ERROR)
 			}
 		} else if iDocNum <= iSchemaMax {
+			Trace.Println(stack_id, "validMaximum", true)
+			Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "maximum", true)
 			return true
 		} else {
 			errs.Add(mem, "Document number " + strDocNum + " is not less than or equal to maximum " + strSchemaMax, JP_ERROR)
 		}
 	}
 
+	Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "maximum", false)
+
+	Trace.Println(stack_id, "validMaximum", false)
 	return false
 }
 
@@ -213,21 +237,26 @@ func validMaximum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schem
 //
 // "exclusiveMinimum", if absent, may be considered as being present with boolean value false.
 //
-func validMinimum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validMinimum(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validMinimum")
+
+	if val, found := Mutex.Find(stack_id[:strings.LastIndex(stack_id, ".")] + "minimum"); found {
+		Trace.Println(stack_id, "validProperties -- mutex --", val)
+		return val
+	} else {
+		Mutex.Add(stack_id[:strings.LastIndex(stack_id, ".")] + "minimum")
+	}
+
 	doc := mem
 	if doc.GetValueType() != V_NUMBER {
 		Warning.Println("valid max against non number")
+		Trace.Println(stack_id, "validMinimum", true)
+
+		Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "minimum", true)
+
 		return true
 	}
 	
-
-	Trace.Println("  validMinimum()")
-	if doc.GetState() == NODE_MUTEX {
-		return true
-	} else  {
-		doc.SetState(NODE_MUTEX)
-	}
-
 	strDocNum := mem.GetValue().(string)
 	strSchemaMin := ""
 
@@ -235,6 +264,7 @@ func validMinimum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schem
 
        	if item, found := parent.Find("minimum"); found {
 		strSchemaMin = item.GetValue().(string)
+		Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "minimum", true)
 		hasMin = true
 	}
 
@@ -242,6 +272,8 @@ func validMinimum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schem
        	if item, found := parent.Find("exclusiveMinimum"); found {
 		if !hasMin {
 			errs.Add(mem, "exclusiveMinium is present without correspoding minimum", JP_ERROR)
+			Trace.Println(stack_id, "validMinimum", false)
+			Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "minimum", false)
 			return false
 		}
 		eMin = item.GetValue().(bool)
@@ -259,11 +291,15 @@ func validMinimum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schem
 
 		if eMin {
 			if fDocNum > fSchemaMin {
+				Trace.Println(stack_id, "validMinimum", true)
+				Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "minimum", true)
 				return true
 			} else {
 				errs.Add(mem, "Document number " + strDocNum + " is not greater than minimum " + strSchemaMin, JP_ERROR)
 			}
 		} else if fDocNum >= fSchemaMin {
+			Trace.Println(stack_id, "validMinimum", true)
+			Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "minimum", true)
 			return true
 		} else {
 			errs.Add(mem, "Document number " + strDocNum + " is not greater than or equal to minimum " + strSchemaMin, JP_ERROR)
@@ -280,16 +316,23 @@ func validMinimum(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Schem
 
 		if eMin {
 			if iDocNum > iSchemaMin {
+				Trace.Println(stack_id, "validMinimum", true)
+				Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "minimum", true)
 				return true
 			} else {
 				errs.Add(mem, "Document number " + strDocNum + " is not greater than minimum " + strSchemaMin, JP_ERROR)
 			}
 		} else if iDocNum >= iSchemaMin {
+			Trace.Println(stack_id, "validMinimum", true)
+			Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "minimum", true)
 			return true
 		} else {
 			errs.Add(mem, "Document number " + strDocNum + " is not greater than or equal to minimum " + strSchemaMin, JP_ERROR)
 		}
 	}
 
+	Mutex.Set(stack_id[:strings.LastIndex(stack_id, ".")] + "minimum", false)
+
+	Trace.Println(stack_id, "validMinimum", false)
 	return false
 }

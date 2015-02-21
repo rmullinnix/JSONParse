@@ -33,8 +33,8 @@ import (
 // has a property by this name, then it must also have properties with the same
 // names as propertyset.
 // 
-func validDependencies(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
-	Trace.Println("  validDependencies()")
+func validDependencies(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validDependencies")
 	if schema.GetValueType() != V_OBJECT {
 		return false
 	}
@@ -91,8 +91,10 @@ func validDependencies(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *
 		prop.ResetIterate()
 		schema_sub := prop.GetNext()
 
-		valid = validMember("dependencies", mem, schema_sub)
+		valid = validMember(stack_id, "dependencies", mem, schema_sub)
 	}
+
+	Trace.Println(stack_id, "validDependencies", valid)
 
 	return valid
 }

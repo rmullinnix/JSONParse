@@ -19,7 +19,8 @@ import (
 // === validates that the type specified in the document is the same as specified in the schema
 //  todo: if number, need to check if integer
 //
-func validType(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validType(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validType")
 	valid := false
 
 	value := valueTypeToString(mem.GetValueType())
@@ -47,6 +48,8 @@ func validType(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaEr
 		Trace.Println("  validType() - invalid match on ", schemaValue, " -- was ", value)
 		errs.Add(mem, "invalid type: expecting - " + schemaValue + " - found - " + value + " instead", JP_ERROR)
 	}
+
+	Trace.Println(stack_id, "validType", valid)
 	return valid
 }
 

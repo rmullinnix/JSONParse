@@ -17,9 +17,11 @@ import (
 // 
 // The length of a string instance is defined as the number of its characters as defined by RFC 4627 [RFC4627].
 // 
-func validMaxLength(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validMaxLength(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validMaxLength")
 	if mem.GetValueType() != V_STRING {
 		Trace.Println("maxLength against non-string")
+		Trace.Println(stack_id, "validMaxLength", true)
 		return true
 	}
 
@@ -38,14 +40,17 @@ func validMaxLength(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sch
 	maxLen, err := strconv.Atoi(strMax)
 	if err != nil {
 		errs.Add(mem, "Invalid integer specified in schema: " + strMax, JP_WARNING)
+		Trace.Println(stack_id, "validMaxLength", false)
 		return false
 	}
 
 	if docLen > maxLen {
 		errs.Add(mem, "String <" + docStr + "> with length " + strconv.Itoa(docLen) + " is greater than maxLength of " + strMax, JP_ERROR)
+		Trace.Println(stack_id, "validMaxLength", false)
 		return false
 	}
 
+	Trace.Println(stack_id, "validMaxLength", true)
 	return true
 }
 
@@ -61,9 +66,11 @@ func validMaxLength(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sch
 // 
 // The length of a string instance is defined as the number of its characters as defined by RFC 4627 [RFC4627].
 // 
-func validMinLength(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validMinLength(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validMinLength")
 	if mem.GetValueType() != V_STRING {
 		Trace.Println("minLength against non-string")
+		Trace.Println(stack_id, "validMinLength", true)
 		return true
 	}
 
@@ -82,13 +89,16 @@ func validMinLength(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sch
 	minLen, err := strconv.Atoi(strMin)
 	if err != nil {
 		errs.Add(mem, "Invalid integer specified in schema: " + strMin, JP_WARNING)
+		Trace.Println(stack_id, "validMinLength", false)
 		return false
 	}
 
 	if docLen < minLen {
 		errs.Add(mem, "String <" + docStr + "> is less than minLength of " + strMin, JP_ERROR)
+		Trace.Println(stack_id, "validMinLength", false)
 		return false
 	}
 
+	Trace.Println(stack_id, "validMinLength", true)
 	return true
 }

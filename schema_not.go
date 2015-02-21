@@ -13,15 +13,16 @@ import (
 // 
 // An instance is valid against this keyword if it fails to validate successfully against the schema defined by this keyword.
 // 
-func validNot(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validNot(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "vaildNot")
+
 	schema.ResetIterate()
 	items := schema.GetNext() // items is of type object
-	
-	Trace.Println("  vaildNot()")
 
 	suppress = true
-	valid := validMember("not", mem, items)
+	valid := validMember(stack_id, "not", mem, items)
 	suppress = false
 	
+	Trace.Println(stack_id, "vaildNot", !valid)
 	return !valid
 }

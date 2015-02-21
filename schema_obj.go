@@ -10,7 +10,7 @@ func (js *JSONSchema) validObject(doc *JSONNode, schema *JSONNode) bool {
 	depth = 0
 	doc.ResetIterate()
 	schema.ResetIterate()
-	validMember("root", doc, schema)
+	validMember("*", "root", doc, schema)
 
 	return true
 }

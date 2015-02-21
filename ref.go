@@ -13,7 +13,7 @@ func (jp *JSONParser) resolveReferences() {
 		ref := jp.refObject(jp.jsonDoc, key)
 		if ref == nil {
 			jp.addError("Unable to resolve reference " + key, JP_FATAL)
-			OutputError(jp.references[key], "Invalid json reference " + key)
+			OutputError(jp.references[key], "Invalid json reference " + key, JP_ERROR)
 			jp.references[key] = nil
 		} else {
 			jp.references[key] = ref
@@ -49,7 +49,7 @@ func (jp *JSONParser)refObject(doc *JSONNode, ref string) *JSONNode {
 		if match == len(subparts) {
 			return refObj
 		}
-	} else if strings.HasPrefix(ref, "http")  {
+	} else { // if strings.HasPrefix(ref, "http")  {
 		var eDoc		*JSONNode
 	
 		found := false

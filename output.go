@@ -46,7 +46,7 @@ func outputInit(log_level string) {
 		"ERROR: ", 0)
 }
 
-func OutputError(node *JSONNode, errMsg string) {
+func OutputError(node *JSONNode, errMsg string, level int) {
 	tokenIndex := node.tokenIndex
 	parser := node.root.doc
 	tokenStart := 0
@@ -62,7 +62,13 @@ func OutputError(node *JSONNode, errMsg string) {
 
 	output := parser.prettyTokens(tokenStart, tokenEnd)
 
-	Error.Println(errMsg + "\n" + output)
+	if level == JP_ERROR || level == JP_FATAL {
+		Error.Println(errMsg + "\n" + output)
+	} else if level == JP_WARNING {
+		Warning.Println(errMsg + "\n" + output)
+	} else if level == JP_INFO {
+		Info.Println(errMsg + "\n" + output)
+	}
 }
 
 // formats the json with newlines and indentation

@@ -17,6 +17,7 @@ import (
 //
 // This keyword MAY be used in root schemas, and in any subschemas.
 // 
-func validDefault(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validDefault(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validDefault", true)
 	return true
 }

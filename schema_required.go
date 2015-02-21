@@ -14,12 +14,12 @@ import (
 // 
 // An object instance is valid against this keyword if its property set contains all elements in this keyword's array value.
 // 
-func validRequired(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+func validRequired(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *SchemaErrors) bool {
+	Trace.Println(stack_id, "validRequired")
+
 	missing := ""
 	arr := schema
 
-	Trace.Println("  validRequired()")
-	mem.dump()
 	if mem.GetType() != N_OBJECT {
 		mem.ResetIterate()
 		mem = mem.GetNext()
@@ -40,7 +40,6 @@ func validRequired(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sche
 			if _, found := mem.Find(val.(string)); found  {
 				match++
 			} else {
-				mem.dump()
 				missing = val.(string)
 				break
 			}
@@ -51,6 +50,7 @@ func validRequired(mem *JSONNode, schema *JSONNode, parent *JSONNode, errs *Sche
 		errs.Add(mem, "document missing required property " + missing, JP_ERROR)
 	}
 
+	Trace.Println(stack_id, "validRequired", match == count)
 	return match == count
 }
 
