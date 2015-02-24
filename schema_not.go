@@ -23,6 +23,12 @@ func validNot(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNode
 	valid := validMember(stack_id, "not", mem, items)
 	suppress = false
 	
+	if valid {
+		errs.Add(mem, "Encountered valid components in NOT section", JP_ERROR)
+	}
+
+	suppressErrors = NewSchemaErrors()
+
 	Trace.Println(stack_id, "vaildNot", !valid)
 	return !valid
 }

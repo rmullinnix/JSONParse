@@ -22,6 +22,7 @@ func validAllOf(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNo
 	valid := false
 	schema.ResetIterate()
 	index := 1
+	suppress = true
 	for {
 		item := schema.GetNext()
 		if item == nil {
@@ -43,10 +44,17 @@ func validAllOf(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNo
 			break
 		}
 	}
+	suppress = false
 
 	if !valid {
 		errs.Add(mem, "Did not match all the allOf constraints", JP_ERROR)
+		for i := range suppressErrors.errorList {
+			suppressErrors.errorList[i].level = JP_INFO
+			schemaErrors.errorList = append(schemaErrors.errorList, suppressErrors.errorList[i])
+		}
 	}
+
+	suppressErrors = NewSchemaErrors()
 
 	Trace.Println(stack_id, "allOf", valid)
 	return valid
@@ -102,6 +110,16 @@ func validAnyOf(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNo
 			break
 		}
 	}
+
+	if !valid {
+		errs.Add(mem, "Did not match any of the anyOf constraints", JP_ERROR)
+		for i := range suppressErrors.errorList {
+			suppressErrors.errorList[i].level = JP_INFO
+			schemaErrors.errorList = append(schemaErrors.errorList, suppressErrors.errorList[i])
+		}
+	}
+
+	suppressErrors = NewSchemaErrors()
 
 	Trace.Println(stack_id, "anyOf", valid)
 	return valid
@@ -167,8 +185,7 @@ func validOneOf(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNo
 	}
 
 	if match == 1 {
-		Trace.Println(stack_id, "oneOf", true)
-		return true
+		suppressErrors = NewSchemaErrors()
 	} else {
 		if match > 1 {
 			Trace.Println("  oneOf", depth, "matched more than one in oneOf")
@@ -177,7 +194,18 @@ func validOneOf(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNo
 			Trace.Println("  oneOf", depth, "failed to match one in oneOf")
 			errs.Add(mem, "Failed to match one in a oneOf section", JP_ERROR)
 		}
-		Trace.Println(stack_id, "oneOf", false)
-		return false
+		if !suppress {
+			for i := range suppressErrors.errorList {
+				suppressErrors.errorList[i].level = JP_INFO
+				schemaErrors.errorList = append(schemaErrors.errorList, suppressErrors.errorList[i])
+			}
+		}
 	}
+
+	Trace.Println(stack_id, "oneOf", match==1)
+
+	if !suppress {
+		suppressErrors = NewSchemaErrors()
+	}
+	return match == 1
 }

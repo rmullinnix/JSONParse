@@ -1,6 +1,7 @@
 package JSONParse
 
 import (
+	"strconv"
 )
 
 type SchemaError struct {
@@ -49,12 +50,12 @@ func (se *SchemaErrors) Output() {
 		}
 
 		if level == JP_ERROR || level == JP_FATAL {
-			output := parser.prettyTokens(tokenStart, tokenEnd)
-			Error.Println(errMsg + "\n" + output)
+			output :=  parser.prettyTokens(tokenStart, tokenEnd)
+			Error.Println(strconv.Itoa(node.lineNumber) + ":", errMsg + "\n" + output)
 		} else if level == JP_WARNING {
-			Warning.Println(errMsg)
+			Error.Println(strconv.Itoa(node.lineNumber) + ":", errMsg)
 		} else if level == JP_INFO {
-			Info.Println(errMsg)
+			Error.Println(strconv.Itoa(node.lineNumber) + ":", errMsg)
 		}
 	}
 }

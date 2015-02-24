@@ -31,16 +31,8 @@ func validMember(stack_id string, name string, mem *JSONNode, schemaMem *JSONNod
 			new_stack_id := stack_id + "." + strconv.Itoa(index)
 			index++
 			if suppress {
-				errs := NewSchemaErrors()
-				nextValid := validator(new_stack_id, mem, item, schemaMem, errs)
+				nextValid := validator(new_stack_id, mem, item, schemaMem, suppressErrors)
 				valid = valid && nextValid
-
-				if !nextValid {
-					for i := range errs.errorList {
-						errs.errorList[i].level = JP_INFO
-						schemaErrors.errorList = append(schemaErrors.errorList, errs.errorList[i])
-					}
-				}
 			} else {
 				nextValid := validator(new_stack_id, mem, item, schemaMem, schemaErrors)
 				valid = valid && nextValid

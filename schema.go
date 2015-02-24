@@ -18,6 +18,7 @@ type validator func(string, *JSONNode, *JSONNode, *JSONNode, *SchemaErrors) bool
 //   todo:  add func AddKeywordValidator
 var keywords		map[string]validator
 var schemaErrors	*SchemaErrors
+var suppressErrors	*SchemaErrors
 var validateFormat	bool
 var suppress		bool  // suppress errors
 var Mutex		*SchemaMutex
@@ -39,6 +40,7 @@ func NewJSONSchema(source string, level string) *JSONSchema {
 	js := new(JSONSchema)
 
 	schemaErrors = NewSchemaErrors()
+	suppressErrors = NewSchemaErrors()
 
 	Mutex = NewSchemaMutex()
 
