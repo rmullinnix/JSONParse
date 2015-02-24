@@ -7,13 +7,13 @@ import (
 // steps the reference map and stores the pointer to the json node
 // in the json tree.
 // when the schema is used for validation, the references are resolved
-// as they are encounter -- see node.go
+// as they are encountered -- see node.go
 func (jp *JSONParser) resolveReferences() {
 	for key, _ := range jp.references {
 		ref := jp.refObject(jp.jsonDoc, key)
 		if ref == nil {
 			jp.addError("Unable to resolve reference " + key, JP_FATAL)
-			OutputError(jp.references[key], "Invalid json reference " + key, JP_ERROR)
+			// OutputError(jp.references[key], "Invalid json reference " + key, JP_ERROR)
 			jp.references[key] = nil
 		} else {
 			jp.references[key] = ref

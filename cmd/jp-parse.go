@@ -24,7 +24,9 @@ func main() {
 		parser = JSONParse.NewJSONParser(file, maxError, level)
 		valDoc, errs := parser.Parse()
 		if !valDoc {
-			fmt.Println(errs)
+			for i := range errs {
+				parser.OutputError(errs[i])
+			}
 		}
 	}
 }

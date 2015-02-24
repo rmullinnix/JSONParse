@@ -58,7 +58,6 @@ type ParseError struct {
 	Error      string
 	ErrorLevel int
 	LineNumber int
-	Line	   string
 	Offset     int
 }
 
@@ -144,7 +143,6 @@ func (jp *JSONParser) Parse() (bool, []ParseError) {
 		return false, jp.errorList
 	}
 
-	jp.newLine(-1)
 	// check for end of source
 	err = jp.expectToken(END_OF_SOURCE)
 	if err != nil {
@@ -202,6 +200,7 @@ func (jp *JSONParser) parseArray(arr *JSONNode) bool {
 	for {
 		if jp.tokens[jp.curIndex + 1] != END_ARRAY {
 			val := arr.NewArrayValue(jp.curIndex)
+			val.lineNumber = len(jp.lines)
 			if !jp.parseValue(val) {
 				break
 			}
@@ -256,6 +255,7 @@ func (jp *JSONParser) parseValue(val *JSONNode) bool {
 	if jp.curTokenType == BEGIN_OBJECT {
 		val.SetValueType(V_OBJECT)
 		obj := val.NewObject(jp.curIndex)
+		obj.lineNumber = len(jp.lines)
 
 		return jp.parseObject(obj)
 	} else if jp.curTokenType == BEGIN_ARRAY {
@@ -312,6 +312,7 @@ func (jp *JSONParser) parseRefPtr(ref *JSONNode) bool {
 		ref.SetType(N_OBJECT)
 		ref.SetValueType(V_OBJECT)
 		obj := ref.NewObject(jp.curIndex)
+		obj.lineNumber = len(jp.lines)
 
 		return jp.parseObject(obj)
 	}
@@ -354,6 +355,7 @@ func (jp *JSONParser) parseObject(obj *JSONNode) bool {
 		}
 
 		mem := obj.NewMember(jp.curTokenVar, jp.curIndex)
+		mem.lineNumber = len(jp.lines)
 
 		if !jp.parseMember(mem) {
 			Trace.Println("parse mem failed")
@@ -403,6 +405,12 @@ func (jp *JSONParser) nextToken() int {
 		jp.curTokenVar = jp.variables[jp.tokens[jp.curIndex]]
 	} else if jp.curTokenType == REF {
 		jp.curTokenVar = "$ref"
+	}
+
+	if jp.curTokenType == BEGIN_ARRAY || jp.curTokenType == BEGIN_OBJECT || jp.curTokenType == VALUE_SEPARATOR {
+		jp.newLine(1, true)
+	} else if jp.curTokenType == END_ARRAY || jp.curTokenType == END_OBJECT {
+		jp.newLine(-1, false)
 	}
 
 	return jp.curTokenType
@@ -522,12 +530,17 @@ func (jp *JSONParser) getWord() int {
 
 // keep track of the lines for the json tokens used to reproduce
 // json for error display
-func (jp *JSONParser) newLine(indent int) {
+func (jp *JSONParser) newLine(indent int, tokenOnLine bool) {
 	var newLine		lineItem
 
-	jp.lines[jp.lineCount].tokenEnd = jp.curIndex - 1
-	
-	newLine.tokenStart = jp.curIndex
+	if tokenOnLine {
+		jp.lines[jp.lineCount].tokenEnd = jp.curIndex
+		newLine.tokenStart = jp.curIndex + 1
+	} else {
+		jp.lines[jp.lineCount].tokenEnd = jp.curIndex - 1
+		newLine.tokenStart = jp.curIndex
+	}
+
 	jp.curIndent += indent
 	newLine.indent = jp.curIndent
 
@@ -542,9 +555,9 @@ func (jp *JSONParser) addError(errText string, level int) *ParseError {
 	pError.Error = errText
 	pError.ErrorLevel = level
 	pError.Offset = jp.curIndex
+	pError.LineNumber = len(jp.lines)
 
 	Trace.Println(errText)
-//	Trace.Println(jp.prettyTokens(jp.curIndex-4, jp.curIndex+4))
 	jp.errorList = append(jp.errorList, pError)
 
 	return &pError

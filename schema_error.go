@@ -31,6 +31,30 @@ func (se *SchemaErrors) Add(node *JSONNode, message string, level int) {
 
 func (se *SchemaErrors) Output() {
 	for i := 0; i < len(se.errorList); i++ {
-		OutputError(se.errorList[i].node, se.errorList[i].message, se.errorList[i].level)
+		node := se.errorList[i].node
+		level := se.errorList[i].level
+		errMsg := se.errorList[i].message
+
+		tokenIndex := node.tokenIndex
+		parser := node.root.doc
+		tokenStart := 0
+		tokenEnd := len(parser.tokens)
+
+		if tokenIndex > 15 {
+			tokenStart = tokenIndex - 15
+		}
+
+		if tokenIndex < tokenEnd - 15 {
+			tokenEnd = tokenIndex + 15
+		}
+
+		if level == JP_ERROR || level == JP_FATAL {
+			output := parser.prettyTokens(tokenStart, tokenEnd)
+			Error.Println(errMsg + "\n" + output)
+		} else if level == JP_WARNING {
+			Warning.Println(errMsg)
+		} else if level == JP_INFO {
+			Info.Println(errMsg)
+		}
 	}
 }

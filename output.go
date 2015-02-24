@@ -46,28 +46,26 @@ func outputInit(log_level string) {
 		"ERROR: ", 0)
 }
 
-func OutputError(node *JSONNode, errMsg string, level int) {
-	tokenIndex := node.tokenIndex
-	parser := node.root.doc
-	tokenStart := 0
-	tokenEnd := len(parser.tokens)
-
-	if tokenIndex > 15 {
-		tokenStart = tokenIndex - 15
+func (jp *JSONParser) OutputError(err ParseError) {
+	startLine := 0
+	if err.LineNumber > 3 {
+		startLine = err.LineNumber - 2
 	}
 
-	if tokenIndex < tokenEnd - 15 {
-		tokenEnd = tokenIndex + 15
+	endLine := len(jp.lines)
+	if err.LineNumber < endLine - 2 {
+		endLine = err.LineNumber + 2
 	}
 
-
-	if level == JP_ERROR || level == JP_FATAL {
-		output := parser.prettyTokens(tokenStart, tokenEnd)
-		Error.Println(errMsg + "\n" + output)
-	} else if level == JP_WARNING {
-		Warning.Println(errMsg)
-	} else if level == JP_INFO {
-		Info.Println(errMsg)
+	startLine--
+	endLine--
+	if err.ErrorLevel == JP_ERROR || err.ErrorLevel == JP_FATAL {
+		Error.Println(jp.prettyTokens(jp.lines[startLine].tokenStart, jp.lines[endLine].tokenStart + 4))
+		Error.Println("line:", err.LineNumber, err.Error) 
+	} else if err.ErrorLevel == JP_WARNING {
+		Warning.Println("line:", err.LineNumber, err.Error) 
+	} else {
+		Info.Println("line:", err.LineNumber, err.Error) 
 	}
 }
 

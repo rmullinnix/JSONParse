@@ -24,7 +24,7 @@ func validFormat(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONN
 	}
 
 	Trace.Println(stack_id, "validFormat")
-	valid := false
+	valid := true
 
 	if schema.GetValueType() == V_STRING {
 		schemaValue := schema.GetValue().(string)

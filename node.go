@@ -43,6 +43,7 @@ type JSONNode struct {
 	unnamedKids	[]*JSONNode
 	curIndex	int
 	tokenIndex	int
+	lineNumber	int
 }
 
 // intializes a new json tree for a json document
@@ -99,17 +100,6 @@ func (jn *JSONNode) NewMember(name string, v_indx int) *JSONNode {
 	}
 
 	jn.namedKids[name] = node
-
-	return node
-}
-
-// creates a new node of type "array"
-func (jn *JSONNode) NewArray(v_indx int) *JSONNode {
-	node := jn.newNode(v_indx)
-	node.nodeType = N_ARRAY
-
-	jn.unnamedKids = append(jn.unnamedKids, node)
-	jn.valType = V_ARRAY
 
 	return node
 }
@@ -197,7 +187,7 @@ func (jn *JSONNode) GetValueType() ValueType {
 func (jn *JSONNode) Find(name string) (*JSONNode, bool) {
 	if len(jn.namedKids) == 1 {
 		if refNode, found := jn.namedKids["$ref"]; found {
-			refNode.CollapseReference(jn)
+			refNode.collapseReference(jn)
 		}
 	}
 
@@ -240,7 +230,7 @@ func (jn *JSONNode) GetNextMember(chaseRef bool) (string, *JSONNode) {
 				hasRef = false
 			} else if first.nodeType == N_REFERENCE {
 				if chaseRef {
-					first.CollapseReference(jn)
+					first.collapseReference(jn)
 				} else {
 					hasRef = false
 				}
@@ -289,11 +279,6 @@ func (jn *JSONNode) GetNextValue() interface{} {
 	jn.curIndex++
 
 	return item.GetValue()
-}
-
-// determine if two nodes are equal
-func (jn *JSONNode) Equal(comp *JSONNode) bool {
-	return false
 }
 
 // return the current node as json (includes children)
@@ -401,7 +386,7 @@ func (jn *JSONNode) getValueKidsJson() string {
 // removes the $ref tag from the list of members and
 // replaces with the members of the referred to json section
 // will link to internal as well as external document sections
-func (jn *JSONNode) CollapseReference(parent *JSONNode) {
+func (jn *JSONNode) collapseReference(parent *JSONNode) {
 	if jn.valType != V_STRING {
 		return
 	}

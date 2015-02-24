@@ -28,14 +28,15 @@ func validAllOf(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNo
 			break
 		}
 
-		if item.GetValueType () == V_OBJECT {
-			item.ResetIterate()
-			item = item.GetNext()
+		of := item
+		if of.GetValueType () == V_OBJECT {
+			of.ResetIterate()
+			of = of.GetNext()
 		}
 
 		new_stack_id := stack_id + "." + strconv.Itoa(index)
 		index++
-		valid = validMember(new_stack_id, "allOf", mem, item)
+		valid = validMember(new_stack_id, "allOf", mem, of)
 
 		Trace.Println("   allOf valid", valid)
 		if !valid {

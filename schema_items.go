@@ -36,6 +36,7 @@ func validItems(stack_id string, mem *JSONNode, schema *JSONNode, parent *JSONNo
 
 	// ignore non-arrays
 	if mem.GetValueType() != V_ARRAY {
+		Trace.Println("  items section is not an array")
 		return true 
 	}
 
