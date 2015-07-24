@@ -12,7 +12,7 @@ func (jp *JSONParser) resolveReferences() {
 	for key, _ := range jp.references {
 		ref := jp.refObject(jp.jsonDoc, key)
 		if ref == nil {
-			jp.addError("Unable to resolve reference " + key, JP_FATAL)
+			jp.addError("Unable to resolve reference "+key, JP_FATAL)
 			// OutputError(jp.references[key], "Invalid json reference " + key, JP_ERROR)
 			jp.references[key] = nil
 		} else {
@@ -29,7 +29,7 @@ func (jp *JSONParser) resolveReferences() {
 // reference during schema validation.
 //
 // if the reference cannot be resolved, it is flagged as an error
-func (jp *JSONParser)refObject(doc *JSONNode, ref string) *JSONNode {
+func (jp *JSONParser) refObject(doc *JSONNode, ref string) *JSONNode {
 	// internal reference
 	if ref[0:1] == "#" {
 		if ref == "#" {
@@ -49,23 +49,25 @@ func (jp *JSONParser)refObject(doc *JSONNode, ref string) *JSONNode {
 		if match == len(subparts) {
 			return refObj
 		}
-	} else { // if strings.HasPrefix(ref, "http")  {
-		var eDoc		*JSONNode
-	
-		found := false
-		parts := strings.Split(ref, "#")
-
-		if eDoc, found = jp.extDocs[parts[0]]; !found {
-			extDoc := NewJSONParser(parts[0], 1, "default")
-
-			extDoc.Parse()
-
-			eDoc = extDoc.jsonDoc
-			jp.extDocs[parts[0]] = eDoc
-		}
-
-		return jp.refObject(eDoc, "#" + parts[1])
 	}
 
-	return nil
+	found := false
+	parts := strings.Split(ref, "#")
+
+	if len(parts) < 2 {
+		jp.addError("Invalid reference '"+ref+"'", JP_FATAL)
+		return nil
+	}
+
+	eDoc, found := jp.extDocs[parts[0]]
+	if !found {
+		extDoc := NewJSONParser(parts[0], 1, "default")
+
+		extDoc.Parse()
+
+		eDoc = extDoc.jsonDoc
+		jp.extDocs[parts[0]] = eDoc
+	}
+
+	return jp.refObject(eDoc, "#"+parts[1])
 }
